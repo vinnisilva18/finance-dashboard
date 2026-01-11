@@ -1,20 +1,18 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { fileURLToPath, URL } from 'url'
+import path from 'path'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
-    }
+      '@': path.resolve(__dirname, './src'),
+    },
   },
   server: {
     port: 5173,
-    host: true
+    host: true,
   },
-  // Configuração para build de produção
   build: {
     outDir: 'dist',
     sourcemap: false,
@@ -22,11 +20,16 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['vue', 'vue-router', 'pinia'],
-          charts: ['chart.js']
-        }
+          charts: ['chart.js'],
+          utils: ['axios']
+        },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
       }
-    }
+    },
+    chunkSizeWarningLimit: 1000,
+    emptyOutDir: true
   },
-  // Configuração para deploy no Vercel
-  base: process.env.NODE_ENV === 'production' ? '/' : '/'
+  base: './'
 })
