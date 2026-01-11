@@ -31,7 +31,17 @@
         
         <div class="form-group">
           <label>Categoria</label>
-          <input v-model="newTransaction.category" type="text" required class="form-control">
+          <div v-if="!isCustomCategory">
+            <select v-model="newTransaction.category" class="form-control" @change="handleCategoryChange" required>
+              <option value="" disabled>Selecione uma categoria</option>
+              <option v-for="cat in existingCategories" :key="cat" :value="cat">{{ cat }}</option>
+              <option value="__new__">+ Nova Categoria</option>
+            </select>
+          </div>
+          <div v-else>
+            <input v-model="newTransaction.category" type="text" required class="form-control" placeholder="Nome da categoria" ref="customCategoryInput">
+            <button type="button" @click="cancelCustomCategory" class="btn-link">Selecionar existente</button>
+          </div>
         </div>
         
         <div class="form-group">
@@ -87,29 +97,64 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useTransactions } from '../composables/useTransactions'
 import { formatCurrency, formatDate } from '../utils/formatters'
 
 const { transactions, loading, error, fetchTransactions, addTransaction, deleteTransaction } = useTransactions()
 
 const showForm = ref(false)
+const isCustomCategory = ref(false)
+const customCategoryInput = ref(null)
+
+const existingCategories = computed(() => {
+  const cats = new Set(transactions.value.map(t => t.category).filter(Boolean))
+  return [...cats].sort()
+})
+
+const getLocalDateString = () => {
+  const date = new Date()
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 const newTransaction = ref({
   description: '',
   amount: 0,
   type: 'expense',
   category: '',
-  date: new Date().toISOString().split('T')[0]
+  date: getLocalDateString()
 })
 
 onMounted(() => {
   fetchTransactions()
 })
 
+const handleCategoryChange = async () => {
+  if (newTransaction.value.category === '__new__') {
+    isCustomCategory.value = true
+    newTransaction.value.category = ''
+    await nextTick()
+    customCategoryInput.value?.focus()
+  }
+}
+
+const cancelCustomCategory = () => {
+  isCustomCategory.value = false
+  newTransaction.value.category = ''
+}
+
 const handleSubmit = async () => {
   try {
+    // Cria a data ao meio-dia local para evitar problemas de fuso horário (UTC shift)
+    const [year, month, day] = newTransaction.value.date.split('-').map(Number)
+    const dateAdjusted = new Date(year, month - 1, day, 12, 0, 0)
+
     await addTransaction({
       ...newTransaction.value,
+      date: dateAdjusted,
       amount: newTransaction.value.type === 'expense' 
         ? -Math.abs(newTransaction.value.amount)
         : Math.abs(newTransaction.value.amount)
@@ -121,8 +166,9 @@ const handleSubmit = async () => {
       amount: 0,
       type: 'expense',
       category: '',
-      date: new Date().toISOString().split('T')[0]
+      date: getLocalDateString()
     }
+    isCustomCategory.value = false
     showForm.value = false
   } catch (err) {
     console.error('Error adding transaction:', err)
@@ -223,5 +269,16 @@ th, td {
   padding: 10px;
   border-radius: 4px;
   margin: 10px 0;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 5px;
+  font-size: 0.9em;
 }
 </style>
