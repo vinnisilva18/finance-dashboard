@@ -99,16 +99,37 @@
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useTransactions } from '../composables/useTransactions'
+import { useCategories } from '../composables/useCategories'
 import { formatCurrency, formatDate } from '../utils/formatters'
 
 const { transactions, loading, error, fetchTransactions, addTransaction, deleteTransaction } = useTransactions()
+const { categories: storedCategories, fetchCategories } = useCategories()
 
 const showForm = ref(false)
 const isCustomCategory = ref(false)
 const customCategoryInput = ref(null)
 
 const existingCategories = computed(() => {
-  const cats = new Set(transactions.value.map(t => t.category).filter(Boolean))
+  const defaults = [
+    'Mercado', 'Transporte/Uber', 'Assinaturas', 'Remédios', 
+    'Seguro de Celular', 'Shopping', 'Condomínio', 'Psicologia', 
+    'Convênio', 'Plano Funerário', 'Enel', 'Financiamento', 
+    'Internet', 'Lazer', 'Celular', 'Outros'
+  ]
+  
+  // Pega as categorias salvas no banco (da tela Categories.vue)
+  const fromStore = storedCategories.value ? storedCategories.value.map(c => c.name) : []
+  
+  // Pega categorias usadas em transações existentes (para manter histórico)
+  const fromTransactions = transactions.value.map(t => t.category)
+  
+  // Junta tudo e remove duplicadas
+  const cats = new Set([
+    ...defaults,
+    ...fromStore,
+    ...fromTransactions
+  ].filter(Boolean))
+  
   return [...cats].sort()
 })
 
@@ -130,6 +151,7 @@ const newTransaction = ref({
 
 onMounted(() => {
   fetchTransactions()
+  fetchCategories()
 })
 
 const handleCategoryChange = async () => {
