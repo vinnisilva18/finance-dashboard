@@ -1,4 +1,5 @@
-import { createRouter, createWebHistory } from 'vue-router'
+// frontend/src/router/index.js
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
 const routes = [
@@ -54,16 +55,27 @@ const routes = [
     name: 'Profile',
     component: () => import('../views/Profile.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('../views/NotFound.vue')
   }
 ]
 
+// Usa hash mode para compatibilidade com Vercel/GitHub Pages
 const router = createRouter({
   history: createWebHistory(),
+  // history: createWebHashHistory(), // Alternativa se history mode não funcionar
   routes
 })
 
+// Proteção de rotas
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
+  
+  // Inicializa a store
+  authStore.initialize()
   
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next('/login')
