@@ -26,8 +26,22 @@ const app = express();
 connectDB();
 
 // CORS configuration
+const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+if (process.env.VERCEL_URL) {
+  allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
+}
+
 const corsOptions = {
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: (origin, callback) => {
+    // allow requests with no origin 
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not ' +
+                'allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
@@ -86,26 +100,30 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
-  console.log(`
-  ===========================================
-  🚀 Server running on port ${PORT}
-  ===========================================
-  Environment: ${process.env.NODE_ENV || 'development'}
-  Frontend URL: http://localhost:5173
-  API URL: http://localhost:${PORT}/api
-  Health check: http://localhost:${PORT}/api/health
-  ===========================================
-  `);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
-    mongoose.connection.close();
+// Only start server if running directly
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  const server = app.listen(PORT, () => {
+    console.log(`
+    ===========================================
+    🚀 Server running on port ${PORT}
+    ===========================================
+    Environment: ${process.env.NODE_ENV || 'development'}
+    Frontend URL: http://localhost:5173
+    API URL: http://localhost:${PORT}/api
+    Health check: http://localhost:${PORT}/api/health
+    ===========================================
+    `);
   });
-});
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM signal received: closing HTTP server');
+    server.close(() => {
+      console.log('HTTP server closed');
+      mongoose.connection.close();
+    });
+  });
+}
+
+module.exports = app;
