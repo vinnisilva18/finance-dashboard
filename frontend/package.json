@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "prebuild": "npm run clean",
-    "clean": "rm -rf dist .vercel",
+    "clean": "del /q /s dist .vercel",
     "vercel-build": "npm run build"
   },
   "dependencies": {

@@ -1,0 +1,1 @@
+const e=(t,r="BRL")=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:r}).format(t),n=t=>new Date(t).toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"});export{n as a,e as f};
