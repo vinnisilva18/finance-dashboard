@@ -80,19 +80,37 @@ const corsOptions = {
 // Middleware
 app.use(cors(corsOptions));
 app.use(helmet());
-app.use(morgan('dev'));
+app.use(morgan('combined')); // Changed to combined for more detailed logs
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Add request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - IP: ${req.ip}`);
+  next();
+});
 
 // Handle preflight requests
 app.options('*', cors(corsOptions));
 
 // Test route
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'Backend is working!' });
+  console.log('Test route called:', {
+    method: req.method,
+    url: req.url,
+    headers: req.headers,
+    timestamp: new Date().toISOString()
+  });
+  res.json({
+    message: 'Backend is working!',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    version: '1.0.0'
+  });
 });
 
 // Routes
+console.log('Setting up API routes...');
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -100,6 +118,7 @@ app.use('/api/cards', cardRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/currencies', currencyRoutes);
 app.use('/api/user', userRoutes);
+console.log('API routes configured successfully');
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -117,16 +136,38 @@ app.use('/api/*', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err.stack);
-  
+  console.error('Error occurred:', {
+    message: err.message,
+    stack: err.stack,
+    url: req.url,
+    method: req.method,
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
+    timestamp: new Date().toISOString()
+  });
+
   // Handle CORS errors
   if (err.name === 'UnauthorizedError') {
-    return res.status(401).json({ message: 'Invalid token' });
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid token'
+    });
   }
-  
-  res.status(500).json({ 
+
+  // Handle CORS policy violations
+  if (err.message && err.message.includes('CORS')) {
+    return res.status(403).json({
+      success: false,
+      message: 'CORS policy violation',
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Forbidden'
+    });
+  }
+
+  res.status(500).json({
+    success: false,
     message: 'Something went wrong!',
-    error: process.env.NODE_ENV === 'development' ? err.message : {}
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',
+    timestamp: new Date().toISOString()
   });
 });
 
