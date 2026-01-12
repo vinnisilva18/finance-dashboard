@@ -4,7 +4,7 @@
     {
       "src": "src/server.js",
       "use": "@vercel/node",
-      "config": { 
+      "config": {
         "maxLambdaSize": "15mb",
         "includeFiles": ["src/**"]
       }
@@ -13,15 +13,12 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "src/server.js"
-    },
-    {
-      "src": "/(.*)",
       "dest": "src/server.js",
       "headers": {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-        "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Authorization"
+        "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Authorization, Accept",
+        "Access-Control-Allow-Credentials": "true"
       }
     }
   ],

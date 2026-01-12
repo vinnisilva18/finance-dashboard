@@ -100,7 +100,10 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Only start server if running directly
+// For Vercel deployment, export the app directly
+module.exports = app;
+
+// For local development, start the server
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   const server = app.listen(PORT, () => {
@@ -125,5 +128,3 @@ if (require.main === module) {
     });
   });
 }
-
-module.exports = app;
