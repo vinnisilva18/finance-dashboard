@@ -114,7 +114,9 @@
             </q-item>
             <q-item
               clickable
-              @click="navigateTo('/transactions?type=income')"
+              :active="activeRoute === 'Income'"
+              @click="navigateTo('/income')"
+              active-class="active-submenu-item"
             >
               <q-item-section avatar>
                 <q-icon name="trending_up" size="18px" color="positive" />
@@ -123,7 +125,9 @@
             </q-item>
             <q-item
               clickable
-              @click="navigateTo('/transactions?type=expense')"
+              :active="activeRoute === 'Expense'"
+              @click="navigateTo('/expense')"
+              active-class="active-submenu-item"
             >
               <q-item-section avatar>
                 <q-icon name="trending_down" size="18px" color="negative" />
