@@ -14,7 +14,14 @@ export const useTransactions = () => {
 
     try {
       const response = await apiService.get('/transactions', { params: filters })
-      transactionStore.setTransactions(response.data)
+      
+      // Validação de segurança: Garante que é um array antes de salvar
+      if (Array.isArray(response.data)) {
+        transactionStore.setTransactions(response.data)
+      } else if (response.data && Array.isArray(response.data.data)) {
+        // Suporte para respostas envelopadas { success: true, data: [...] }
+        transactionStore.setTransactions(response.data.data)
+      }
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch transactions'
       throw err

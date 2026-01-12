@@ -74,7 +74,7 @@
         <tbody>
           <tr v-for="transaction in transactions" :key="transaction.id">
             <td>{{ formatDate(transaction.date) }}</td>
-            <td>{{ transaction.description }}</td>
+            <td>{{ transaction.description || 'Sem descrição' }}</td>
             <td>{{ transaction.category }}</td>
             <td>
               <span :class="['type-badge', transaction.type]">
@@ -124,8 +124,12 @@ const pageTitle = computed(() => {
 })
 
 const filteredTransactions = computed(() => {
-  if (!props.transactionType) return transactions.value
-  return transactions.value.filter(t => t.type === props.transactionType)
+  // Filtra transações inválidas (sem ID ou mal formadas) para não quebrar a tela
+  const validTransactions = (transactions.value || []).filter(t => t && t.id)
+  
+  if (!props.transactionType) return validTransactions
+  
+  return validTransactions.filter(t => t.type === props.transactionType)
 })
 
 const existingCategories = computed(() => {

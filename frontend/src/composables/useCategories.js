@@ -14,7 +14,12 @@ export const useCategories = () => {
 
     try {
       const response = await apiService.get('/categories')
-      categoryStore.setCategories(response.data)
+      
+      if (Array.isArray(response.data)) {
+        categoryStore.setCategories(response.data)
+      } else if (response.data && Array.isArray(response.data.data)) {
+        categoryStore.setCategories(response.data.data)
+      }
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch categories'
       throw err
