@@ -1,6 +1,7 @@
 // frontend/src/stores/auth.js
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import apiService from '../services/apiService'
 
 // Helper para verificar se estamos no navegador
 const isBrowser = typeof window !== 'undefined';
@@ -66,44 +67,9 @@ export const useAuthStore = defineStore('auth', () => {
         return { success: true, data: { token: mockToken, user: mockUser } }
       }
 
-      // Para desenvolvimento, use dados mockados
-      if (!import.meta.env.VITE_API_URL) {
-        // Mock login for development
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        const mockUser = {
-          id: 1,
-          name: 'Demo User',
-          email: credentials.email || 'demo@example.com'
-        };
-
-        const mockToken = 'mock-jwt-token-' + Date.now();
-
-        token.value = mockToken
-        user.value = mockUser
-
-        if (isBrowser) {
-          localStorage.setItem('token', mockToken)
-          localStorage.setItem('user', JSON.stringify(mockUser))
-        }
-
-        return { success: true, data: { token: mockToken, user: mockUser } }
-      }
-      
       // Em produção, use a API real
-      const response = await fetch('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials)
-      });
-      
-      if (!response.ok) {
-        throw new Error('Login failed');
-      }
-      
-      const data = await response.json();
+      const response = await apiService.post('/auth/login', credentials)
+      const data = response.data
       
       token.value = data.token
       user.value = data.user
@@ -115,8 +81,9 @@ export const useAuthStore = defineStore('auth', () => {
       
       return { success: true, data }
     } catch (err) {
-      error.value = err.message || 'Login failed'
-      return { success: false, message: err.message }
+      const msg = err.response?.data?.message || err.message || 'Login failed'
+      error.value = msg
+      return { success: false, message: msg }
     } finally {
       loading.value = false
     }
@@ -127,42 +94,8 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     
     try {
-      if (!import.meta.env.VITE_API_URL) {
-        // Mock registration
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const mockUser = {
-          id: Date.now(),
-          name: userData.name || 'New User',
-          email: userData.email
-        };
-        
-        const mockToken = 'mock-jwt-token-' + Date.now();
-        
-        token.value = mockToken
-        user.value = mockUser
-        
-        if (isBrowser) {
-          localStorage.setItem('token', mockToken)
-          localStorage.setItem('user', JSON.stringify(mockUser))
-        }
-        
-        return { success: true, data: { token: mockToken, user: mockUser } }
-      }
-      
-      const response = await fetch('http://localhost:3000/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData)
-      });
-      
-      if (!response.ok) {
-        throw new Error('Registration failed');
-      }
-      
-      const data = await response.json();
+      const response = await apiService.post('/auth/register', userData)
+      const data = response.data
       
       token.value = data.token
       user.value = data.user
@@ -174,8 +107,9 @@ export const useAuthStore = defineStore('auth', () => {
       
       return { success: true, data }
     } catch (err) {
-      error.value = err.message || 'Registration failed'
-      return { success: false, message: err.message }
+      const msg = err.response?.data?.message || err.message || 'Registration failed'
+      error.value = msg
+      return { success: false, message: msg }
     } finally {
       loading.value = false
     }
