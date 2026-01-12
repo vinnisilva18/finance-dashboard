@@ -172,9 +172,9 @@ const newTransaction = ref({
   date: getLocalDateString()
 })
 
-onMounted(() => {
-  fetchTransactions()
-  if (categoryStore.fetchCategories) categoryStore.fetchCategories()
+onMounted(async () => {
+  await fetchTransactions()
+  if (categoryStore.fetchCategories) await categoryStore.fetchCategories()
 })
 
 const handleCategoryChange = async () => {

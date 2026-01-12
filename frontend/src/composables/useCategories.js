@@ -22,7 +22,7 @@ export const useCategories = () => {
       }
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch categories'
-      throw err
+      console.error('Erro ao buscar categorias:', err)
     } finally {
       loading.value = false
     }

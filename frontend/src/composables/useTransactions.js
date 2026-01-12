@@ -24,7 +24,7 @@ export const useTransactions = () => {
       }
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch transactions'
-      throw err
+      console.error('Erro ao buscar transações:', err)
     } finally {
       loading.value = false
     }
