@@ -29,6 +29,7 @@ apiClient.interceptors.response.use(
         window.location.href = '/login'
       }
     }
+    console.error('API Error:', error.response || error.message)
     return Promise.reject(error)
   }
 )
