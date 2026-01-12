@@ -452,6 +452,10 @@ import TransactionDetailModal from '@/components/modals/TransactionDetailModal.v
 import { formatCurrency } from '@/utils/formatters'
 import { exportToExcel } from '@/utils/export'
 
+const props = defineProps({
+  initialType: { type: String, default: null }
+})
+
 const $q = useQuasar()
 const transactionStore = useTransactionStore()
 const categoryStore = useCategoryStore()
@@ -567,6 +571,10 @@ onMounted(async () => {
     transactionStore.fetchTransactions(),
     categoryStore.fetchCategories()
   ])
+  
+  if (props.initialType) {
+    filters.value.type = [props.initialType]
+  }
 })
 
 // Computed Properties

@@ -164,6 +164,10 @@ const formData = reactive({
   icon: 'restaurant'
 })
 
+const imageInput = ref(null)
+const imagePreview = ref(null)
+const selectedImage = ref(null)
+
 onMounted(() => {
   fetchCategories()
 })
@@ -187,6 +191,10 @@ const editCategory = (category) => {
   formData.color = category.color
   formData.budget = category.budget
   formData.icon = category.icon
+  selectedImage.value = category.image
+  if (category.image) {
+    imagePreview.value = category.image
+  }
   showForm.value = true
 }
 
@@ -202,6 +210,7 @@ const resetForm = () => {
   formData.color = '#4CAF50'
   formData.budget = 0
   formData.icon = 'restaurant'
+  removeImage()
 }
 
 const handleDeleteCategory = async (id) => {
@@ -289,6 +298,13 @@ const handleDeleteCategory = async (id) => {
 .category-icon {
   font-size: 0.9em;
   color: #666;
+}
+
+.category-image {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
 }
 
 .category-actions {

@@ -1,6 +1,6 @@
 <template>
   <div class="transactions">
-    <h1>Transações</h1>
+    <h1>{{ pageTitle }}</h1>
     
     <div class="controls">
       <button @click="showForm = !showForm" class="btn btn-primary">
@@ -49,8 +49,8 @@
           <input v-model="newTransaction.date" type="date" required class="form-control">
         </div>
         
-        <button type="submit" :disabled="loading" class="btn btn-primary">
-          {{ loading ? 'Adicionando...' : 'Adicionar Transação' }}
+        <button type="submit" :disabled="loading || formLoading" class="btn btn-primary">
+          {{ (loading || formLoading) ? 'Adicionando...' : 'Adicionar Transação' }}
         </button>
       </form>
     </div>
@@ -99,15 +99,34 @@
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useTransactions } from '../composables/useTransactions'
-import { useCategories } from '../composables/useCategories'
+import { useCategoryStore } from '../stores/category'
 import { formatCurrency, formatDate } from '../utils/formatters'
 
-const { transactions, loading, error, fetchTransactions, addTransaction, deleteTransaction } = useTransactions()
-const { categories: storedCategories, fetchCategories } = useCategories()
+const props = defineProps({
+  transactionType: {
+    type: String,
+    default: null
+  }
+})
 
+const { transactions, loading, error, fetchTransactions, addTransaction, deleteTransaction } = useTransactions()
+const categoryStore = useCategoryStore()
+
+const formLoading = ref(false)
 const showForm = ref(false)
 const isCustomCategory = ref(false)
 const customCategoryInput = ref(null)
+
+const pageTitle = computed(() => {
+  if (props.transactionType === 'income') return 'Receitas'
+  if (props.transactionType === 'expense') return 'Despesas'
+  return 'Transações'
+})
+
+const filteredTransactions = computed(() => {
+  if (!props.transactionType) return transactions.value
+  return transactions.value.filter(t => t.type === props.transactionType)
+})
 
 const existingCategories = computed(() => {
   const defaults = [
@@ -118,10 +137,10 @@ const existingCategories = computed(() => {
   ]
   
   // Pega as categorias salvas no banco (da tela Categories.vue)
-  const fromStore = storedCategories.value ? storedCategories.value.map(c => c.name) : []
+  const fromStore = categoryStore.categories ? categoryStore.categories.map(c => c.name) : []
   
   // Pega categorias usadas em transações existentes (para manter histórico)
-  const fromTransactions = transactions.value.map(t => t.category)
+  const fromTransactions = filteredTransactions.value.map(t => t.category)
   
   // Junta tudo e remove duplicadas
   const cats = new Set([
@@ -144,14 +163,14 @@ const getLocalDateString = () => {
 const newTransaction = ref({
   description: '',
   amount: 0,
-  type: 'expense',
+  type: props.transactionType || 'expense',
   category: '',
   date: getLocalDateString()
 })
 
 onMounted(() => {
   fetchTransactions()
-  fetchCategories()
+  if (categoryStore.fetchCategories) categoryStore.fetchCategories()
 })
 
 const handleCategoryChange = async () => {
@@ -169,13 +188,33 @@ const cancelCustomCategory = () => {
 }
 
 const handleSubmit = async () => {
+  if (!newTransaction.value.date) {
+    alert('Por favor, selecione uma data válida.')
+    return
+  }
+
+  formLoading.value = true
   try {
     // Cria a data ao meio-dia local para evitar problemas de fuso horário (UTC shift)
     const [year, month, day] = newTransaction.value.date.split('-').map(Number)
     const dateAdjusted = new Date(year, month - 1, day, 12, 0, 0)
 
+    // Encontra o ID da categoria baseado no nome selecionado
+    let categoryId = newTransaction.value.category
+    const categories = categoryStore.categories || []
+    const selectedCategoryObj = categories.find(c => c.name === newTransaction.value.category)
+    
+    if (selectedCategoryObj) {
+      categoryId = selectedCategoryObj.id
+    } else if (newTransaction.value.category) {
+      // Se a categoria não existe (ex: digitada manualmente), cria ela antes
+      const newCat = await categoryStore.createCategory({ name: newTransaction.value.category, type: newTransaction.value.type })
+      if (newCat && newCat.id) categoryId = newCat.id
+    }
+
     await addTransaction({
       ...newTransaction.value,
+      category: categoryId,
       date: dateAdjusted,
       amount: newTransaction.value.type === 'expense' 
         ? -Math.abs(newTransaction.value.amount)
@@ -194,6 +233,9 @@ const handleSubmit = async () => {
     showForm.value = false
   } catch (err) {
     console.error('Error adding transaction:', err)
+    alert('Erro ao adicionar transação. Verifique os dados e tente novamente.')
+  } finally {
+    formLoading.value = false
   }
 }
 

@@ -57,9 +57,9 @@
         color="danger"
       />
       
-      <StatsCard 
-        title="Economias" 
-        :amount="stats.savings" 
+      <StatsCard
+        title="Saldo"
+        :amount="stats.savings"
         icon="🏦"
         trend-type="positive"
         color="success"

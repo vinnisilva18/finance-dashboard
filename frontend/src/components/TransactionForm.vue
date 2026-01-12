@@ -78,7 +78,7 @@
                 <template v-slot:option="scope">
                   <q-item v-bind="scope.itemProps">
                     <q-item-section avatar>
-                      <q-icon :name="getCategoryIcon(scope.opt.value)" />
+                      <q-icon :name="getCategoryIcon(scope.opt.label)" />
                     </q-item-section>
                     <q-item-section>
                       <q-item-label>{{ scope.opt.label }}</q-item-label>
@@ -107,6 +107,65 @@
                 :rules="[val => !!val || 'Descrição é obrigatória']"
                 placeholder="Ex: Salário mensal, Supermercado, etc."
               />
+            </div>
+          </div>
+
+          <!-- Investimento (Apenas para Despesas) -->
+          <div v-if="type === 'expense'" class="form-section">
+            <div class="section-title">
+              <q-checkbox
+                v-model="form.isInvestment"
+                label="É um investimento?"
+              />
+            </div>
+            
+            <div v-if="form.isInvestment" class="investment-options q-pa-md bg-grey-1 rounded-borders">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Tipo de Investimento</label>
+                  <q-select
+                    v-model="form.investmentType"
+                    :options="investmentOptions"
+                    filled
+                    label="Selecione o tipo"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Valor BRL - Real *</label>
+                  <q-input
+                    v-model="form.amountBRL"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    prefix="R$"
+                    filled
+                    :rules="[val => val > 0 || 'Valor em reais é obrigatório']"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Valor USD - Dólar *</label>
+                  <q-input
+                    v-model="form.amountUSD"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    prefix="$"
+                    filled
+                    :rules="[val => val > 0 || 'Valor em dólares é obrigatório']"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div class="form-group" v-if="form.investmentType === 'Dólar'">
+                  <label>Valor em Dólar (Estimado)</label>
+                  <div class="text-h6 q-mt-sm text-primary">
+                    $ {{ formatCurrency(convertedValue, 'USD') }}
+                  </div>
+                  <div class="text-caption text-grey">Cotação: R$ {{ dollarRate.toFixed(4) }}</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -259,11 +318,15 @@
               </div>
               <div class="summary-item">
                 <span>Categoria:</span>
-                <span>{{ form.category || 'Não selecionada' }}</span>
+                <span>{{ getCategoryName(form.category) || 'Não selecionada' }}</span>
               </div>
               <div class="summary-item">
                 <span>Data:</span>
                 <span>{{ form.date ? formatDate(form.date) : 'Não selecionada' }}</span>
+              </div>
+              <div v-if="form.isInvestment" class="summary-item">
+                <span>Investimento:</span>
+                <span>{{ form.investmentType }}</span>
               </div>
               <div v-if="form.recurring.isRecurring" class="summary-item">
                 <span>Recorrência:</span>
@@ -348,6 +411,10 @@ const form = ref({
     frequency: 'monthly',
     endDate: ''
   },
+  isInvestment: false,
+  investmentType: 'CDI',
+  amountBRL: 0,
+  amountUSD: 0,
   tags: [],
   attachments: [],
   notes: ''
@@ -369,6 +436,8 @@ if (props.editingTransaction) {
       frequency: trans.recurring?.frequency || 'monthly',
       endDate: trans.recurring?.endDate?.split('T')[0] || ''
     },
+    isInvestment: trans.isInvestment || false,
+    investmentType: trans.investmentType || 'CDI',
     tags: trans.tags || [],
     attachments: [],
     notes: trans.notes || ''
@@ -383,7 +452,7 @@ const categoryOptions = computed(() => {
     .filter(cat => cat.type === type.value)
     .map(cat => ({
       label: cat.name,
-      value: cat.name,
+      value: cat.id,
       color: cat.color,
       icon: getCategoryIcon(cat.name)
     }))
@@ -409,6 +478,8 @@ const paymentMethods = [
   { label: 'PIX', value: 'pix', icon: 'qr_code' },
   { label: 'Outro', value: 'other', icon: 'more_horiz' }
 ]
+
+const investmentOptions = ['CDI', 'Dólar', 'Tesouro Direto', 'Ações', 'FIIs', 'Cripto', 'Poupança']
 
 const frequencyOptions = [
   { label: 'Diária', value: 'daily' },
@@ -461,6 +532,35 @@ const nextOccurrences = computed(() => {
   return occurrences
 })
 
+const dollarRate = ref(0)
+const convertedValue = ref(0)
+
+async function updateDollarRate() {
+  try {
+    const res = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL')
+    const data = await res.json()
+    dollarRate.value = parseFloat(data.USDBRL.bid)
+  } catch (e) {
+    console.error('Erro ao buscar cotação do dólar', e)
+  }
+}
+
+function updateConversion() {
+  if (form.value.investmentType === 'Dólar' && dollarRate.value > 0) {
+    convertedValue.value = form.value.amount / dollarRate.value
+  } else {
+    convertedValue.value = 0
+  }
+}
+
+watch(() => form.value.amount, updateConversion)
+watch(() => form.value.investmentType, async (newVal) => {
+  if (newVal === 'Dólar') {
+    await updateDollarRate()
+  }
+  updateConversion()
+})
+
 onMounted(async () => {
   await Promise.all([
     categoryStore.fetchCategories(),
@@ -495,6 +595,11 @@ function getCategoryIcon(categoryName) {
     'Outros': 'category'
   }
   return iconMap[categoryName] || 'receipt'
+}
+
+function getCategoryName(id) {
+  const cat = allCategories.value?.find(c => c.id === id || c.name === id)
+  return cat ? cat.name : id
 }
 
 function filterCategories(val, update) {
@@ -574,6 +679,10 @@ async function submitForm() {
         frequency: form.value.recurring.frequency,
         endDate: form.value.recurring.endDate || null
       } : null,
+      isInvestment: form.value.isInvestment,
+      investmentType: form.value.isInvestment ? form.value.investmentType : null,
+      amountBRL: form.value.isInvestment ? parseFloat(form.value.amountBRL) : null,
+      amountUSD: form.value.isInvestment ? parseFloat(form.value.amountUSD) : null,
       tags: form.value.tags,
       notes: form.value.notes
     }
@@ -627,6 +736,10 @@ function resetForm() {
       frequency: 'monthly',
       endDate: ''
     },
+    isInvestment: false,
+    investmentType: 'CDI',
+    amountBRL: 0,
+    amountUSD: 0,
     tags: [],
     attachments: [],
     notes: ''

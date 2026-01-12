@@ -87,7 +87,7 @@
               </div>
               
               <div class="analysis-item">
-                <div class="analysis-label">Economia Diária Necessária</div>
+                <div class="analysis-label">Saldo Diário Necessário</div>
                 <div class="analysis-value">
                   R$ {{ formatCurrency(dailyRequired) }}/dia
                 </div>
@@ -102,24 +102,24 @@
             </div>
           </div>
 
-          <!-- Ajuste de Economia Mensal -->
+          <!-- Ajuste de Saldo Mensal -->
           <div v-if="goal.monthlyTarget" class="form-section">
             <div class="section-title">
               <q-checkbox
                 v-model="deadlineForm.adjustMonthlyTarget"
-                label="Ajustar economia mensal automaticamente"
+                label="Ajustar saldo mensal automaticamente"
               />
             </div>
             
             <div v-if="deadlineForm.adjustMonthlyTarget" class="monthly-adjustment">
               <div class="adjustment-info">
                 <div class="current-monthly">
-                  <span>Economia mensal atual:</span>
+                  <span>Saldo mensal atual:</span>
                   <span>R$ {{ formatCurrency(goal.monthlyTarget) }}</span>
                 </div>
                 
                 <div class="new-monthly">
-                  <span>Nova economia mensal:</span>
+                  <span>Novo saldo mensal:</span>
                   <span class="monthly-value">R$ {{ formatCurrency(newMonthlyTarget) }}</span>
                 </div>
                 
@@ -293,13 +293,13 @@ const impactMessage = computed(() => {
   } else if (daysDifference.value > 7) {
     return 'Ajuste moderado. Mantenha o foco para alcançar a meta.'
   } else if (daysDifference.value > 0) {
-    return 'Pequeno ajuste. Continue com sua rotina de economia.'
+    return 'Pequeno ajuste. Continue com sua rotina de saldo.'
   } else if (daysDifference.value === 0) {
     return 'Sem alteração no prazo.'
   } else if (daysDifference.value >= -7) {
     return 'Prazo reduzido. Você precisará aumentar seus esforços.'
   } else {
-    return 'Redução significativa no prazo. Reavalie sua capacidade de economia.'
+    return 'Redução significativa no prazo. Reavalie sua capacidade de saldo.'
   }
 })
 

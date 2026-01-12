@@ -147,10 +147,43 @@
     <!-- Register Modal -->
     <div v-if="showRegister" class="modal-overlay" @click="showRegister = false">
       <div class="modal-content" @click.stop>
-        <!-- Registration form would go here -->
-        <h3>Cadastro em construção</h3>
-        <p>Esta funcionalidade estará disponível em breve!</p>
-        <button @click="showRegister = false" class="modal-close">Fechar</button>
+        <div class="form-header">
+          <h3>Crie sua conta</h3>
+          <p>Preencha os dados abaixo para começar</p>
+        </div>
+
+        <form @submit.prevent="handleRegister" class="login-form">
+          <div class="form-group">
+            <label>Nome Completo</label>
+            <div class="input-with-icon">
+              <span class="input-icon">👤</span>
+              <input v-model="registerForm.name" type="text" required class="form-input" placeholder="Seu nome" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>E-mail</label>
+            <div class="input-with-icon">
+              <span class="input-icon">📧</span>
+              <input v-model="registerForm.email" type="email" required class="form-input" placeholder="seu@email.com" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Senha</label>
+            <div class="input-with-icon">
+              <span class="input-icon">🔒</span>
+              <input v-model="registerForm.password" type="password" required class="form-input" placeholder="Sua senha" />
+            </div>
+          </div>
+
+          <button type="submit" class="submit-btn" :disabled="loading">
+            <span v-if="loading" class="btn-spinner"></span>
+            <span v-else>Cadastrar</span>
+          </button>
+        </form>
+        
+        <button @click="showRegister = false" class="modal-close-text">Cancelar</button>
       </div>
     </div>
   </div>
@@ -168,6 +201,12 @@ const form = reactive({
   email: 'demo@financontrol.com',
   password: 'demopass123',
   remember: false
+})
+
+const registerForm = reactive({
+  name: '',
+  email: '',
+  password: ''
 })
 
 const errors = reactive({})
@@ -214,6 +253,9 @@ const handleLogin = async () => {
   
   loading.value = true
   
+  // Limpa qualquer token antigo para evitar conflitos
+  localStorage.removeItem('token')
+  
   try {
     const result = await authStore.login({
       email: form.email,
@@ -221,6 +263,13 @@ const handleLogin = async () => {
     })
     
     if (result.success) {
+      // Garante que o token e usuário sejam salvos para o apiService usar
+      const token = result.token || (result.data && result.data.token)
+      const user = result.user || (result.data && result.data.user)
+      
+      if (token) localStorage.setItem('token', token)
+      if (user) localStorage.setItem('user', JSON.stringify(user))
+      
       // Navegar imediatamente sem delay
       router.push('/')
     } else {
@@ -229,6 +278,40 @@ const handleLogin = async () => {
     }
   } catch (error) {
     errors.general = 'Erro ao fazer login. Tente novamente.'
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleRegister = async () => {
+  loading.value = true
+  // Limpa qualquer token antigo antes de registrar
+  localStorage.removeItem('token')
+  
+  try {
+    // Assume que a store tem uma action 'register' que chama a API /api/auth/register
+    // e salva o token/usuário igual ao login
+    const result = await authStore.register({
+      name: registerForm.name,
+      email: registerForm.email,
+      password: registerForm.password
+    })
+
+    if (result && result.success) {
+      // Garante que o token e usuário sejam salvos após o cadastro
+      const token = result.token || (result.data && result.data.token)
+      const user = result.user || (result.data && result.data.user)
+      
+      if (token) localStorage.setItem('token', token)
+      if (user) localStorage.setItem('user', JSON.stringify(user))
+      
+      showRegister.value = false
+      router.push('/')
+    } else {
+      alert(result?.message || 'Erro ao criar conta')
+    }
+  } catch (error) {
+    alert('Erro ao realizar cadastro: ' + (error.message || 'Tente novamente'))
   } finally {
     loading.value = false
   }
@@ -800,6 +883,20 @@ const handleLogin = async () => {
 
 .modal-close:hover {
   background: var(--primary-600);
+}
+
+.modal-close-text {
+  margin-top: 1rem;
+  background: none;
+  border: none;
+  color: var(--gray-400);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.modal-close-text:hover {
+  color: var(--gray-200);
+  text-decoration: underline;
 }
 
 /* Responsive */

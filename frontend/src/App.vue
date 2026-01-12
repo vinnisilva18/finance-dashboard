@@ -27,42 +27,42 @@
         </div>
 
         <nav class="sidebar-nav">
-          <router-link to="/" class="nav-item" exact-active-class="active" @click.native="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Painel' : ''">
+          <router-link to="/" class="nav-item" exact-active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Painel' : ''">
             <span class="nav-icon">📊</span>
             <span class="nav-text" v-show="!isSidebarCollapsed">Painel</span>
           </router-link>
 
-          <router-link to="/transactions" class="nav-item" active-class="active" @click.native="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Transações' : ''">
+          <router-link to="/transactions" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Transações' : ''">
             <span class="nav-icon">💳</span>
             <span class="nav-text" v-show="!isSidebarCollapsed">Transações</span>
           </router-link>
 
-          <router-link to="/categories" class="nav-item" active-class="active" @click.native="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Categorias' : ''">
+          <router-link to="/categories" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Categorias' : ''">
             <span class="nav-icon">🏷️</span>
             <span class="nav-text" v-show="!isSidebarCollapsed">Categorias</span>
           </router-link>
 
-          <router-link to="/credit-cards" class="nav-item" active-class="active" @click.native="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Cartões' : ''">
+          <router-link to="/credit-cards" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Cartões' : ''">
             <span class="nav-icon">💳</span>
             <span class="nav-text" v-show="!isSidebarCollapsed">Cartões</span>
           </router-link>
 
-          <router-link to="/goals" class="nav-item" active-class="active" @click.native="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Metas' : ''">
+          <router-link to="/goals" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Metas' : ''">
             <span class="nav-icon">🎯</span>
             <span class="nav-text" v-show="!isSidebarCollapsed">Metas</span>
           </router-link>
 
-          <router-link to="/reports" class="nav-item" active-class="active" @click.native="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Relatórios' : ''">
+          <router-link to="/reports" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Relatórios' : ''">
             <span class="nav-icon">📈</span>
             <span class="nav-text" v-show="!isSidebarCollapsed">Relatórios</span>
           </router-link>
 
-          <router-link to="/currency" class="nav-item" active-class="active" @click.native="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Câmbio' : ''">
+          <router-link to="/currency" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Câmbio' : ''">
             <span class="nav-icon">🌎</span>
             <span class="nav-text" v-show="!isSidebarCollapsed">Câmbio</span>
           </router-link>
 
-          <router-link to="/profile" class="nav-item" active-class="active" @click.native="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Perfil' : ''">
+          <router-link to="/profile" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Perfil' : ''">
             <span class="nav-icon">👤</span>
             <span class="nav-text" v-show="!isSidebarCollapsed">Perfil</span>
           </router-link>
@@ -227,6 +227,10 @@ watch(() => route.path, () => {
   transition: transform 0.3s ease;
   box-shadow: var(--shadow-lg);
   color: #4b5563;
+}
+
+.sidebar.collapsed {
+  width: 80px;
 }
 
 .sidebar-header {
@@ -422,6 +426,10 @@ watch(() => route.path, () => {
 
 .main-content.with-sidebar {
   margin-left: 280px;
+}
+
+.main-content.collapsed {
+  margin-left: 80px;
 }
 
 /* Top Bar */

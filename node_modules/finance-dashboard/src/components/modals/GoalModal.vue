@@ -145,19 +145,19 @@
             </q-select>
           </div>
 
-          <!-- Marco de Economia Mensal -->
+          <!-- Marco de Saldo Mensal -->
           <div class="form-section">
             <div class="section-title">
               <q-checkbox
                 v-model="goalForm.hasMonthlyTarget"
-                label="Definir economia mensal"
+                label="Definir saldo mensal"
               />
             </div>
             
             <div v-if="goalForm.hasMonthlyTarget" class="monthly-target">
               <div class="form-row">
                 <div class="form-group">
-                  <label>Economia Mensal (R$)</label>
+                  <label>Saldo Mensal (R$)</label>
                   <q-input
                     v-model="goalForm.monthlyTarget"
                     type="number"
@@ -195,7 +195,7 @@
                 <div class="summary-item">
                   <q-icon name="trending_up" />
                   <div class="summary-content">
-                    <div class="summary-label">Economia Total</div>
+                    <div class="summary-label">Saldo Total</div>
                     <div class="summary-value">R$ {{ formatCurrency(totalMonthlySavings) }}</div>
                   </div>
                 </div>
@@ -340,7 +340,7 @@
                 </div>
                 
                 <div v-if="goalForm.hasMonthlyTarget" class="summary-item">
-                  <span>Economia Mensal:</span>
+                  <span>Saldo Mensal:</span>
                   <span class="summary-value">R$ {{ formatCurrency(goalForm.monthlyTarget || 0) }}</span>
                 </div>
               </div>

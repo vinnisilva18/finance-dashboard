@@ -31,12 +31,12 @@
     <div class="user-section">
       <div class="user-info">
         <q-avatar size="48px" class="user-avatar">
-          <img v-if="userStore.user?.avatar" :src="userStore.user.avatar" />
+          <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" />
           <q-icon v-else name="person" size="24px" />
         </q-avatar>
         <div class="user-details">
-          <div class="user-name">{{ userStore.user?.name || 'Usuário' }}</div>
-          <div class="user-email">{{ userStore.user?.email || 'user@example.com' }}</div>
+          <div class="user-name">Olá, {{ authStore.user?.name || 'Usuário' }}</div>
+          <div class="user-email" :title="authStore.user?.email">{{ authStore.user?.email || 'user@example.com' }}</div>
         </div>
         <q-btn
           icon="more_vert"
@@ -360,6 +360,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
+import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { useTransactionStore } from '@/stores/transaction'
 import { useGoalStore } from '@/stores/goal'
@@ -371,6 +372,7 @@ const $q = useQuasar()
 const router = useRouter()
 const route = useRoute()
 
+const authStore = useAuthStore()
 const userStore = useUserStore()
 const transactionStore = useTransactionStore()
 const goalStore = useGoalStore()
@@ -617,8 +619,12 @@ function contactSupport() {
 }
 
 .user-email {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
 }
 
 .sidebar-scroll {

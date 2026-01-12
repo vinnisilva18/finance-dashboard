@@ -1,24 +1,23 @@
 import { ref, computed } from 'vue'
 import { useTransactionStore } from '../stores/transaction'
-import { localStorageService } from '../services/localStorageService'
-
-const TRANSACTIONS_STORAGE_KEY = 'transactions'
+import apiService from '../services/apiService'
 
 export const useTransactions = () => {
   const transactionStore = useTransactionStore()
-  
+
   const loading = ref(false)
   const error = ref(null)
 
   const fetchTransactions = async (filters = {}) => {
     loading.value = true
     error.value = null
-    
+
     try {
-      const transactions = localStorageService.getData(TRANSACTIONS_STORAGE_KEY) || []
-      transactionStore.setTransactions(transactions)
+      const response = await apiService.get('/transactions', { params: filters })
+      transactionStore.setTransactions(response.data)
     } catch (err) {
-      error.value = 'Failed to fetch transactions'
+      error.value = err.response?.data?.message || 'Failed to fetch transactions'
+      throw err
     } finally {
       loading.value = false
     }
@@ -26,17 +25,14 @@ export const useTransactions = () => {
 
   const addTransaction = async (transaction) => {
     loading.value = true
+    error.value = null
+
     try {
-      const newTransaction = {
-        ...transaction,
-        id: Date.now()
-      }
-      const transactions = localStorageService.getData(TRANSACTIONS_STORAGE_KEY) || []
-      const updatedTransactions = [...transactions, newTransaction]
-      localStorageService.saveData(TRANSACTIONS_STORAGE_KEY, updatedTransactions)
-      transactionStore.addTransaction(newTransaction)
+      const response = await apiService.post('/transactions', transaction)
+      transactionStore.addTransaction(response.data)
+      return response.data
     } catch (err) {
-      error.value = 'Failed to add transaction'
+      error.value = err.response?.data?.message || 'Failed to add transaction'
       throw err
     } finally {
       loading.value = false
@@ -45,16 +41,14 @@ export const useTransactions = () => {
 
   const updateTransaction = async (id, updates) => {
     loading.value = true
+    error.value = null
+
     try {
-      let transactions = localStorageService.getData(TRANSACTIONS_STORAGE_KEY) || []
-      const index = transactions.findIndex(t => t.id === id)
-      if (index !== -1) {
-        transactions[index] = { ...transactions[index], ...updates }
-        localStorageService.saveData(TRANSACTIONS_STORAGE_KEY, transactions)
-        transactionStore.updateTransaction(id, updates)
-      }
+      const response = await apiService.put(`/transactions/${id}`, updates)
+      transactionStore.updateTransaction(id, response.data)
+      return response.data
     } catch (err) {
-      error.value = 'Failed to update transaction'
+      error.value = err.response?.data?.message || 'Failed to update transaction'
       throw err
     } finally {
       loading.value = false
@@ -63,13 +57,28 @@ export const useTransactions = () => {
 
   const deleteTransaction = async (id) => {
     loading.value = true
+    error.value = null
+
     try {
-      let transactions = localStorageService.getData(TRANSACTIONS_STORAGE_KEY) || []
-      const updatedTransactions = transactions.filter(t => t.id !== id)
-      localStorageService.saveData(TRANSACTIONS_STORAGE_KEY, updatedTransactions)
+      await apiService.delete(`/transactions/${id}`)
       transactionStore.deleteTransaction(id)
     } catch (err) {
-      error.value = 'Failed to delete transaction'
+      error.value = err.response?.data?.message || 'Failed to delete transaction'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const getTransactionStats = async () => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await apiService.get('/transactions/stats/summary')
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch transaction stats'
       throw err
     } finally {
       loading.value = false
@@ -83,6 +92,7 @@ export const useTransactions = () => {
     fetchTransactions,
     addTransaction,
     updateTransaction,
-    deleteTransaction
+    deleteTransaction,
+    getTransactionStats
   }
 }
