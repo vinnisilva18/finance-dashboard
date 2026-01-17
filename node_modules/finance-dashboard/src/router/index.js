@@ -63,10 +63,9 @@ const routes = [
   }
 ]
 
-// Usa hash mode para compatibilidade com Vercel/GitHub Pages
+// Usa hash mode para melhor compatibilidade com Vercel
 const router = createRouter({
-  history: createWebHistory(),
-  // history: createWebHashHistory(), // Alternativa se history mode não funcionar
+  history: createWebHashHistory(),
   routes
 })
 
