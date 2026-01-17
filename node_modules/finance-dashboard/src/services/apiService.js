@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://finance-dashboard-backend-ashy.vercel.app/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://backend-finance-dashboard.vercel.app/api',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'

@@ -1,14 +1,7 @@
-- [ ] Update TransactionForm.vue: Add two amount fields for investments (BRL and USD), integrate Dollar API
-- [ ] Update Dashboard.vue: Change "Economias" to "Saldo"
-- [ ] Replace localStorage services with API calls
-- [ ] Update composables (useTransactions.js, useCategories.js)
-- [x] Create separate Income/Expense views reusing transaction screen
-- [x] Add image upload for categories with 64x64 resize
-=======
-## Frontend Changes
-- [x] Update TransactionForm.vue: Add two amount fields for investments (BRL and USD), integrate Dollar API
-- [x] Update Dashboard.vue: Change "Economias" to "Saldo"
-- [x] Replace localStorage services with API calls
-- [x] Update composables (useTransactions.js, useCategories.js)
-- [ ] Create separate Income/Expense views reusing transaction screen
-- [ ] Add image upload for categories with 64x64 resize
+# TODO: Initialize Auth on App Startup
+
+## Steps to Complete
+- [ ] Update `auth.js` to add async `initializeAuth` function that verifies token with API
+- [ ] Modify `main.js` to call `initializeAuth` before mounting the app
+- [ ] Test the authentication initialization to ensure it works correctly
+- [ ] Verify that the app handles cases where the token is invalid or missing
