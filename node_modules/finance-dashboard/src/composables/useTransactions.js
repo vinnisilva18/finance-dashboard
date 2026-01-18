@@ -18,13 +18,21 @@ export const useTransactions = () => {
       // Validação de segurança: Garante que é um array antes de salvar
       if (Array.isArray(response.data)) {
         transactionStore.setTransactions(response.data)
+      } else if (response.data && Array.isArray(response.data.transactions)) {
+        // Backend retorna { transactions: [...], totalPages, currentPage, total }
+        transactionStore.setTransactions(response.data.transactions)
       } else if (response.data && Array.isArray(response.data.data)) {
         // Suporte para respostas envelopadas { success: true, data: [...] }
         transactionStore.setTransactions(response.data.data)
+      } else {
+        // Se não encontrar array, define como vazio
+        transactionStore.setTransactions([])
       }
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch transactions'
       console.error('Erro ao buscar transações:', err)
+      // Em caso de erro, garante que a store não fique com dados inválidos
+      transactionStore.setTransactions([])
     } finally {
       loading.value = false
     }
