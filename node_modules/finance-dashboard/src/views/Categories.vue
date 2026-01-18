@@ -75,7 +75,7 @@
       <div class="section">
         <h2>Categorias de Despesa</h2>
         <div class="categories-list">
-          <div v-for="category in expenseCategories" :key="category.id" class="category-item card">
+          <div v-for="category in expenseCategories" :key="category._id || category.id" class="category-item card">
             <div class="category-header">
               <div class="category-color" :style="{ backgroundColor: category.color }"></div>
               <div class="category-info">
@@ -86,7 +86,7 @@
                 <button @click="editCategory(category)" class="btn-icon" title="Edit">
                   ✏️
                 </button>
-                <button @click="deleteCategory(category.id)" class="btn-icon" title="Delete">
+                <button @click="deleteCategory(category._id || category.id)" class="btn-icon" title="Delete">
                   🗑️
                 </button>
               </div>
@@ -105,7 +105,7 @@
       <div class="section">
         <h2>Categorias de Renda</h2>
         <div class="categories-list">
-          <div v-for="category in incomeCategories" :key="category.id" class="category-item card">
+          <div v-for="category in incomeCategories" :key="category._id || category.id" class="category-item card">
             <div class="category-header">
               <div class="category-color" :style="{ backgroundColor: category.color }"></div>
               <div class="category-info">
@@ -116,7 +116,7 @@
                 <button @click="editCategory(category)" class="btn-icon" title="Edit">
                   ✏️
                 </button>
-                <button @click="handleDeleteCategory(category.id)" class="btn-icon" title="Delete">
+                <button @click="handleDeleteCategory(category._id || category.id)" class="btn-icon" title="Delete">
                   🗑️
                 </button>
               </div>
@@ -174,7 +174,7 @@ onMounted(() => {
 
 const handleSubmit = async () => {
   if (editingCategory.value) {
-    await updateCategory(editingCategory.value.id, formData)
+    await updateCategory(editingCategory.value._id || editingCategory.value.id, formData)
     editingCategory.value = null
   } else {
     await addCategory(formData)
