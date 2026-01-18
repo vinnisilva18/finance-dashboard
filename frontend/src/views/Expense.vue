@@ -118,7 +118,7 @@
           <p>Adicione sua primeira despesa clicando no botão acima</p>
         </div>
 
-        <div v-for="transaction in filteredTransactions" :key="transaction.id"
+        <div v-for="transaction in filteredTransactions" :key="transaction._id || transaction.id"
              class="transaction-item"
              @click="editTransaction(transaction)">
           <div class="transaction-icon">
@@ -176,7 +176,7 @@
           <p>Adicione sua primeira despesa clicando no botão acima</p>
         </div>
 
-        <div v-for="transaction in filteredTransactions" :key="transaction.id"
+        <div v-for="transaction in filteredTransactions" :key="transaction._id || transaction.id"
              class="transaction-card"
              @click="editTransaction(transaction)">
           <div class="card-header">
