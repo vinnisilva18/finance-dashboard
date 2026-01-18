@@ -165,7 +165,7 @@
           <q-table
             :rows="filteredTransactions"
             :columns="columns"
-            row-key="id"
+            :row-key="getRowKey"
             :pagination="pagination"
             :loading="loading"
             :filter="searchFilter"
@@ -231,7 +231,7 @@
             <template v-slot:body-selection="scope">
               <q-checkbox
                 v-model="scope.selected"
-                @update:model-value="toggleSelection(scope.row.id)"
+                @update:model-value="toggleSelection(scope.row)"
               />
             </template>
 
@@ -322,7 +322,7 @@
                     flat
                     dense
                     color="negative"
-                    @click="deleteTransaction(props.row.id)"
+                    @click="deleteTransaction(props.row._id || props.row.id)"
                     title="Excluir"
                   />
                   <q-btn
@@ -414,7 +414,7 @@
                   <div class="group-transactions">
                     <div
                       v-for="transaction in group.transactions"
-                      :key="transaction.id"
+                      :key="transaction._id || transaction.id"
                       class="group-transaction"
                     >
                       <div class="transaction-description">
@@ -542,6 +542,9 @@ const columns = [
     style: 'width: 200px'
   }
 ]
+
+// Usar _id do MongoDB como row-key
+const getRowKey = (row) => row._id || row.id
 
 const typeOptions = [
   { label: 'Receita', value: 'income' },
@@ -837,15 +840,16 @@ function clearFilters() {
   })
 }
 
-function toggleSelectAll(selected) {
-  if (selected) {
-    selected.value = filteredTransactions.value.map(t => t.id)
+function toggleSelectAll(isSelected) {
+  if (isSelected) {
+    selected.value = filteredTransactions.value.map(t => t._id || t.id)
   } else {
     selected.value = []
   }
 }
 
-function toggleSelection(id) {
+function toggleSelection(row) {
+  const id = row._id || row.id
   const index = selected.value.indexOf(id)
   if (index > -1) {
     selected.value.splice(index, 1)
@@ -856,6 +860,19 @@ function toggleSelection(id) {
 
 function deleteSelected() {
   if (selected.value.length === 0) return
+  
+  // Validar IDs antes de deletar
+  const invalidIds = selected.value.filter(id => !id || id === 'undefined' || id === 'null')
+  if (invalidIds.length > 0) {
+    console.error('IDs inválidos encontrados:', invalidIds)
+    $q.notify({
+      type: 'negative',
+      message: 'Erro: Algumas transações têm IDs inválidos'
+    })
+    return
+  }
+
+  console.log('Deletando transações com IDs:', selected.value)
   
   $q.dialog({
     title: 'Excluir Transações',
@@ -873,9 +890,10 @@ function deleteSelected() {
         message: 'Transações excluídas com sucesso'
       })
     } catch (error) {
+      console.error('Erro ao excluir transações:', error)
       $q.notify({
         type: 'negative',
-        message: 'Erro ao excluir transações'
+        message: error.message || 'Erro ao excluir transações'
       })
     }
   })
@@ -883,8 +901,15 @@ function deleteSelected() {
 
 function editSelected() {
   if (selected.value.length === 1) {
-    const transaction = filteredTransactions.value.find(t => t.id === selected.value[0])
-    editTransaction(transaction)
+    const transaction = filteredTransactions.value.find(t => (t._id || t.id) === selected.value[0])
+    if (transaction) {
+      editTransaction(transaction)
+    } else {
+      $q.notify({
+        type: 'negative',
+        message: 'Transação não encontrada'
+      })
+    }
   } else {
     $q.notify({
       type: 'warning',
@@ -903,7 +928,7 @@ function exportSelected() {
   }
   
   const data = filteredTransactions.value
-    .filter(t => selected.value.includes(t.id))
+    .filter(t => selected.value.includes(t._id || t.id))
     .map(t => ({
       Data: new Date(t.date).toLocaleDateString('pt-BR'),
       Descrição: t.description,
@@ -955,6 +980,18 @@ function duplicateTransaction(transaction) {
 }
 
 function deleteTransaction(id) {
+  // Validar ID antes de tentar deletar
+  if (!id || id === 'undefined' || id === 'null') {
+    console.error('ID de transação inválido:', id)
+    $q.notify({
+      type: 'negative',
+      message: 'Erro: ID de transação inválido'
+    })
+    return
+  }
+
+  console.log('Deletando transação com ID:', id)
+
   $q.dialog({
     title: 'Excluir Transação',
     message: 'Tem certeza que deseja excluir esta transação?',
@@ -968,9 +1005,10 @@ function deleteTransaction(id) {
         message: 'Transação excluída com sucesso'
       })
     } catch (error) {
+      console.error('Erro ao excluir transação:', error)
       $q.notify({
         type: 'negative',
-        message: 'Erro ao excluir transação'
+        message: error.message || 'Erro ao excluir transação'
       })
     }
   })
@@ -1013,7 +1051,8 @@ function editSelectedTransaction() {
 }
 
 function deleteSelectedTransaction() {
-  deleteTransaction(selectedTransaction.value.id)
+  const id = selectedTransaction.value._id || selectedTransaction.value.id
+  deleteTransaction(id)
   showDetailModal.value = false
 }
 </script>
