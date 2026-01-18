@@ -1,6 +1,122 @@
 <template>
-  <div>
-    <router-view />
+  <div class="app-container">
+    <!-- Unified Sidebar -->
+    <aside v-if="isAuthenticated" class="sidebar" :class="{ 'open': showMobileSidebar, 'collapsed': isSidebarCollapsed }">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">💰</div>
+          <h1 v-show="!isSidebarCollapsed">Finance<span>Pro</span></h1>
+        </div>
+        <button @click="toggleSidebar" class="sidebar-collapse-desktop">
+          <span>☰</span>
+        </button>
+        <button @click="toggleSidebarMobile" class="sidebar-toggle">
+          <span>×</span>
+        </button>
+      </div>
+
+      <div class="sidebar-content">
+        <div class="user-info">
+          <div class="avatar" :style="{ backgroundColor: userColor }" :title="user?.name">
+            {{ userInitials }}
+          </div>
+          <div class="user-details" v-show="!isSidebarCollapsed">
+            <h3>{{ user?.name || 'Usuário' }}</h3>
+            <p>{{ user?.email || 'user@example.com' }}</p>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <router-link to="/" class="nav-item" exact-active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Painel' : ''">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text" v-show="!isSidebarCollapsed">Painel</span>
+          </router-link>
+
+          <router-link to="/transactions" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Transações' : ''">
+            <span class="nav-icon">💳</span>
+            <span class="nav-text" v-show="!isSidebarCollapsed">Transações</span>
+          </router-link>
+
+          <router-link to="/categories" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Categorias' : ''">
+            <span class="nav-icon">🏷️</span>
+            <span class="nav-text" v-show="!isSidebarCollapsed">Categorias</span>
+          </router-link>
+
+          <router-link to="/credit-cards" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Cartões' : ''">
+            <span class="nav-icon">💳</span>
+            <span class="nav-text" v-show="!isSidebarCollapsed">Cartões</span>
+          </router-link>
+
+          <router-link to="/goals" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Metas' : ''">
+            <span class="nav-icon">🎯</span>
+            <span class="nav-text" v-show="!isSidebarCollapsed">Metas</span>
+          </router-link>
+
+          <router-link to="/reports" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Relatórios' : ''">
+            <span class="nav-icon">📈</span>
+            <span class="nav-text" v-show="!isSidebarCollapsed">Relatórios</span>
+          </router-link>
+
+          <router-link to="/currency" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Câmbio' : ''">
+            <span class="nav-icon">🌎</span>
+            <span class="nav-text" v-show="!isSidebarCollapsed">Câmbio</span>
+          </router-link>
+
+          <router-link to="/profile" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Perfil' : ''">
+            <span class="nav-icon">👤</span>
+            <span class="nav-text" v-show="!isSidebarCollapsed">Perfil</span>
+          </router-link>
+        </nav>
+
+        <div class="sidebar-footer">
+          <button @click="logout" class="logout-btn" :title="isSidebarCollapsed ? 'Sair' : ''">
+            <span class="logout-icon">🚪</span>
+            <span v-show="!isSidebarCollapsed">Sair</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Mobile sidebar overlay -->
+    <div v-if="isAuthenticated && showMobileSidebar"
+         class="sidebar-overlay"
+         @click="toggleSidebarMobile"></div>
+
+    <!-- Main content -->
+    <main class="main-content" :class="{ 'with-sidebar': isAuthenticated, 'collapsed': isSidebarCollapsed }">
+      <!-- Top bar for mobile -->
+      <header v-if="isAuthenticated" class="top-bar">
+        <button @click="toggleSidebarMobile" class="menu-toggle">
+          <span>☰</span>
+        </button>
+        <h2 class="page-title">{{ currentPageTitle }}</h2>
+        <div class="top-bar-actions">
+          <button class="notifications-btn">
+            <span>🔔</span>
+            <span v-if="unreadNotifications > 0" class="notification-badge">
+              {{ unreadNotifications }}
+            </span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Page content -->
+      <div class="page-container">
+        <router-view />
+      </div>
+    </main>
+
+    <!-- Notifications toast -->
+    <div v-if="notification" class="notification-toast" :class="notification.type">
+      {{ notification.message }}
+      <button @click="dismissNotification" class="toast-close">×</button>
+    </div>
+
+    <!-- Loading overlay -->
+    <div v-if="globalLoading" class="loading-overlay">
+      <div class="spinner"></div>
+      <p>Carregando...</p>
+    </div>
   </div>
 </template>
 
@@ -78,9 +194,6 @@ onMounted(() => {
   if (savedColor) {
     userColor.value = savedColor
   }
-
-  // Initialize auth on app startup
-  authStore.initialize()
 })
 
 // Fechar sidebar ao navegar
