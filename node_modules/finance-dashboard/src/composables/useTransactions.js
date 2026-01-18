@@ -71,6 +71,12 @@ export const useTransactions = () => {
   }
 
   const deleteTransaction = async (id) => {
+    if (!id || id === 'undefined') {
+      const errorMsg = 'Invalid transaction ID'
+      console.error(errorMsg, id)
+      throw new Error(errorMsg)
+    }
+
     loading.value = true
     error.value = null
 
