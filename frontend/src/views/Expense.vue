@@ -319,7 +319,7 @@ const categoryOptions = computed(() => {
     .filter(cat => cat.type === 'expense')
     .map(cat => ({
       label: cat.name,
-      value: cat.id
+      value: cat._id || cat.id
     }))
 })
 
