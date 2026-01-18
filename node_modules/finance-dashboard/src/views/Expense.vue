@@ -398,7 +398,7 @@ const handleTransactionSubmit = async (transactionData) => {
 }
 
 const deleteTransaction = (transactionId) => {
-  if (!transactionId) {
+  if (!transactionId || transactionId === 'undefined') {
     $q.notify({
       type: 'negative',
       message: 'Erro: ID da transação inválido'

@@ -15,19 +15,26 @@ export const useTransactions = () => {
     try {
       const response = await apiService.get('/transactions', { params: filters })
       
+      let transactionsData = []
       // Validação de segurança: Garante que é um array antes de salvar
       if (Array.isArray(response.data)) {
-        transactionStore.setTransactions(response.data)
+        transactionsData = response.data
       } else if (response.data && Array.isArray(response.data.transactions)) {
         // Backend retorna { transactions: [...], totalPages, currentPage, total }
-        transactionStore.setTransactions(response.data.transactions)
+        transactionsData = response.data.transactions
       } else if (response.data && Array.isArray(response.data.data)) {
         // Suporte para respostas envelopadas { success: true, data: [...] }
-        transactionStore.setTransactions(response.data.data)
-      } else {
-        // Se não encontrar array, define como vazio
-        transactionStore.setTransactions([])
+        transactionsData = response.data.data
       }
+
+      // Normalizar IDs para garantir consistência em toda a aplicação
+      const normalizedTransactions = transactionsData.map(t => ({
+        ...t,
+        id: t._id || t.id, // Garante que .id sempre exista
+        _id: t._id || t.id // Garante que ._id sempre exista
+      }))
+
+      transactionStore.setTransactions(normalizedTransactions)
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch transactions'
       console.error('Erro ao buscar transações:', err)
