@@ -162,7 +162,7 @@
               dense
               size="sm"
               color="negative"
-              @click.stop="deleteTransaction(transaction.id)"
+              @click.stop="deleteTransaction(transaction._id || transaction.id)"
             />
           </div>
         </div>
@@ -199,7 +199,7 @@
                 dense
                 size="sm"
                 color="negative"
-                @click.stop="deleteTransaction(transaction.id)"
+                @click.stop="deleteTransaction(transaction._id || transaction.id)"
               />
             </div>
           </div>
@@ -376,7 +376,7 @@ const closeTransactionForm = () => {
 const handleTransactionSubmit = async (transactionData) => {
   try {
     if (editingTransaction.value) {
-      await transactionStore.updateTransaction(editingTransaction.value.id, transactionData)
+      await transactionStore.updateTransaction(editingTransaction.value._id || editingTransaction.value.id, transactionData)
       $q.notify({
         type: 'positive',
         message: 'Despesa atualizada com sucesso'
