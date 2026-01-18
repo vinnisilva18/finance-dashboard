@@ -260,12 +260,14 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useTransactionStore } from '@/stores/transaction'
 import { useCategoryStore } from '@/stores/category'
+import { useCategories } from '@/composables/useCategories'
 import TransactionForm from '@/components/TransactionForm.vue'
 import { formatCurrency, formatDate } from '@/utils/formatters'
 
 const $q = useQuasar()
 const transactionStore = useTransactionStore()
 const categoryStore = useCategoryStore()
+const { fetchCategories } = useCategories()
 
 // Reactive data
 const searchQuery = ref('')
@@ -433,7 +435,7 @@ const confirmDelete = async () => {
 onMounted(async () => {
   await Promise.all([
     transactionStore.fetchTransactions(),
-    categoryStore.fetchCategories()
+    fetchCategories()
   ])
 })
 
