@@ -195,7 +195,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
@@ -215,7 +215,7 @@ const registerForm = reactive({
 })
 
 const errors = reactive({})
-const loading = ref(false)
+const loading = computed(() => authStore.loading)
 const showPassword = ref(false)
 const showRegister = ref(false)
 
@@ -256,8 +256,6 @@ const handleLogin = async () => {
     return
   }
   
-  loading.value = true
-  
   try {
     const result = await authStore.login({
       email: form.email,
@@ -275,13 +273,10 @@ const handleLogin = async () => {
     // já que o authStore.login trata erros de API.
     errors.general = 'Erro de conexão ao tentar fazer login. Tente novamente.'
     console.error('Login error:', error)
-  } finally {
-    loading.value = false
   }
 }
 
 const handleRegister = async () => {
-  loading.value = true
   errors.general = null
   
   try {
@@ -299,8 +294,6 @@ const handleRegister = async () => {
     }
   } catch (error) {
     alert('Erro ao realizar cadastro: ' + (error.message || 'Tente novamente'))
-  } finally {
-    loading.value = false
   }
 }
 </script>

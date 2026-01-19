@@ -4,7 +4,7 @@
     <div class="welcome-section">
       <div class="welcome-content">
         <h1 class="welcome-title">
-          Olá, <span class="text-gradient">{{ userName }}</span>! 👋
+          Olá, <span class="text-gradient">{{ authStore.userName }}</span>! 👋
         </h1>
         <p class="welcome-subtitle">Acompanhe suas finanças em tempo real</p>
         <div class="date-info">
@@ -221,11 +221,13 @@ import { useRouter } from 'vue-router'
 import { formatCurrency, formatDate } from '../utils/formatters'
 import StatsCard from '../components/ui/StatsCard.vue'
 import { useDashboard } from '../composables/useDashboard'
+import { useAuthStore } from '../stores/auth'
 import { Chart, BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js'
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const {
   loading,
@@ -243,7 +245,6 @@ const {
 const chartCanvas = ref(null)
 let chartInstance = null
 
-const userName = 'Usuário' // Placeholder
 const currentDate = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',
     year: 'numeric',
@@ -274,6 +275,7 @@ const renderChart = () => {
 }
 
 onMounted(() => {
+  authStore.fetchUser()
   renderChart()
 })
 
