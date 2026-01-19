@@ -1,26 +1,14 @@
-import { defineStore } from 'pinia'
-import apiService from '../services/apiService'
-
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: localStorage.getItem('token') || null,
-    user: null, // Irá guardar o objeto do usuário: { id, name, email, ... }
+    user: JSON.parse(localStorage.getItem('user')) || null,
     error: null,
   }),
   getters: {
-    /**
-     * Retorna true se o usuário estiver autenticado.
-     */
     isAuthenticated: (state) => !!state.token && !!state.user,
-    /**
-     * Retorna o nome do usuário com um fallback para 'Usuário'.
-     */
     userName: (state) => state.user?.name || 'Usuário',
   },
   actions: {
-    /**
-     * Realiza o login do usuário.
-     */
     async login(credentials) {
       this.error = null
       try {
@@ -34,6 +22,7 @@ export const useAuthStore = defineStore('auth', {
         this.token = token
         this.user = user
         localStorage.setItem('token', token)
+        localStorage.setItem('user', JSON.stringify(user))
         apiService.defaults.headers.common['Authorization'] = `Bearer ${token}`
 
         return { success: true }
@@ -41,13 +30,9 @@ export const useAuthStore = defineStore('auth', {
         const errorMessage = error.response?.data?.message || 'E-mail ou senha inválidos.'
         this.error = errorMessage
         return { success: false, message: errorMessage }
-      } finally {
       }
     },
 
-    /**
-     * Registra um novo usuário.
-     */
     async register(userData) {
       this.error = null
       try {
@@ -57,6 +42,7 @@ export const useAuthStore = defineStore('auth', {
         this.token = token
         this.user = user
         localStorage.setItem('token', token)
+        localStorage.setItem('user', JSON.stringify(user))
         apiService.defaults.headers.common['Authorization'] = `Bearer ${token}`
 
         return { success: true }
@@ -65,32 +51,29 @@ export const useAuthStore = defineStore('auth', {
         return { success: false, message: this.error }
       }
     },
-    /**
-     * Busca os dados do usuário logado a partir do backend.
-     */
+
     async fetchUser() {
-      if (!this.token || this.user) return // Não faz nada se não houver token ou se o usuário já foi carregado
+      if (!this.token) return
 
       try {
-        // IMPORTANTE: Verifique se a rota '/api/auth/me' está correta.
-        // Pode ser '/api/user', '/api/profile', etc., dependendo do seu backend.
         const response = await apiService.get('/auth/me')
         this.user = response.data
+        localStorage.setItem('user', JSON.stringify(this.user))
       } catch (error) {
-        console.error('Falha ao buscar dados do usuário. O token pode ser inválido.', error)
-        // Se falhar, o token provavelmente é inválido, então deslogamos.
-        this.logout(false)
+        console.error('Falha ao buscar dados do usuário.', error)
+        this.logout()
       }
     },
 
-    /**
-     * Limpa os dados de autenticação e redireciona para o login.
-     */
+    // MUDANÇA IMPORTANTE: Remover window.location.href
     logout() {
       this.token = null
       this.user = null
+      this.error = null
       localStorage.removeItem('token')
+      localStorage.removeItem('user')
       delete apiService.defaults.headers.common['Authorization']
+      // NÃO usar window.location.href aqui
     },
   },
 })

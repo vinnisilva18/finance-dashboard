@@ -192,17 +192,21 @@ const toggleSidebarMobile = () => {
   uiStore.toggleSidebarMobile()
 }
 
-const logout = () => {
-  authStore.logout()
+const logout = async () => {
+  // Resetar estado antes de fazer logout
   resetAppState()
-
-  // Forçar re-renderização completa do componente
+  
+  // Fazer logout
+  authStore.logout()
+  
+  // Forçar re-renderização completa
   appKey.value++
-
-  // Navegar após pequeno delay para garantir reset
-  setTimeout(() => {
-    router.push('/login')
-  }, 50)
+  
+  // Aguardar próximo ciclo de renderização
+  await nextTick()
+  
+  // Navegar para login
+  router.push('/login')
 }
 
 const showNotification = (message, type = 'info') => {
@@ -226,46 +230,107 @@ onMounted(() => {
   if (isAuthenticated.value) {
     const savedSidebarState = localStorage.getItem('sidebarCollapsed')
     if (savedSidebarState === 'true') {
-      isSidebarCollapsed.value = true
+      uiStore.isSidebarCollapsed = true
     }
+  } else {
+    // Garantir que sidebar esteja resetada se não autenticado
+    resetAppState()
   }
 })
 
-// Resetar sempre que a rota mudar para login
+// Watch para a rota - IMPORTANTE: simplificado
 watch(() => route.path, (newPath) => {
+  // Fechar sidebar mobile sempre que a rota mudar
+  uiStore.closeMobileSidebar()
+  
+  // Se navegou para login, resetar completamente
   if (newPath === '/login') {
     resetAppState()
-  }
-  uiStore.closeMobileSidebar()
-})
-
-// Resetar quando o componente for ativado
-onActivated(() => {
-  if (!isAuthenticated.value) {
-    resetAppState()
+    localStorage.removeItem('sidebarCollapsed')
   }
 })
 
-// Watch para quando o estado de autenticação mudar
-watch(isAuthenticated, async (newValue) => {
-  await nextTick()
-  if (!newValue) {
+// Watch para autenticação - CORREÇÃO IMPORTANTE
+watch(isAuthenticated, (newValue, oldValue) => {
+  console.log('Auth changed from', oldValue, 'to', newValue)
+  
+  if (!newValue && oldValue !== undefined) {
+    // Usuário acabou de fazer logout
     resetAppState()
-  } else {
-    // Usuário logou - resetar sidebar para estado padrão
+  } else if (newValue && oldValue === false) {
+    // Usuário acabou de fazer login
     resetAppState()
-
-    // Opcional: delay para garantir renderização
+    
+    // Pequeno delay para garantir renderização e depois restaurar preferência
     setTimeout(() => {
-      // Opcional: restaurar preferência salva
       const savedSidebarState = localStorage.getItem('sidebarCollapsed')
       if (savedSidebarState === 'true') {
         uiStore.isSidebarCollapsed = true
       }
-    }, 100)
+    }, 150)
   }
 })
+
+// Adicionar para debug
+watch([() => uiStore.isSidebarCollapsed, () => uiStore.showMobileSidebar], 
+  ([collapsed, mobile]) => {
+    console.log('UI State:', { collapsed, mobile, isAuthenticated: isAuthenticated.value })
+  }
+)
 </script>
+
+<style scoped>
+/* ADICIONE ESTAS REGRAS NO FINAL DO SEU CSS */
+
+/* Garantir transições suaves */
+.sidebar {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.main-content {
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Garantir que quando não autenticado, o conteúdo ocupe 100% */
+.app-container:has(.main-content:not(.with-sidebar)) .main-content {
+  margin-left: 0 !important;
+  width: 100% !important;
+}
+
+/* Correção para quando sidebar está colapsada */
+.sidebar.collapsed ~ .main-content.collapsed {
+  margin-left: 80px !important;
+}
+
+/* Correção para quando sidebar está expandida */
+.sidebar:not(.collapsed) ~ .main-content.with-sidebar:not(.collapsed) {
+  margin-left: 280px !important;
+}
+
+/* Garantir que a sidebar móvel funcione corretamente */
+@media (max-width: 1024px) {
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: 100;
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .sidebar.collapsed,
+  .sidebar:not(.collapsed) {
+    width: 280px; /* Largura fixa em mobile */
+  }
+  
+  .main-content.with-sidebar,
+  .main-content.collapsed {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+</style>
 
 <style scoped>
 .app-container {
