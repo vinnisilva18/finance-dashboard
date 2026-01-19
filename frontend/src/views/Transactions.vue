@@ -75,7 +75,7 @@
           <tr v-for="transaction in transactions" :key="transaction.id">
             <td>{{ formatDate(transaction.date) }}</td>
             <td>{{ transaction.description || 'Sem descrição' }}</td>
-            <td>{{ transaction.category }}</td>
+            <td>{{ getCategoryName(transaction.category) }}</td>
             <td>
               <span :class="['type-badge', transaction.type]">
                 {{ transaction.type === 'income' ? 'Receita' : 'Despesa' }}
@@ -112,6 +112,16 @@ const props = defineProps({
 const { transactions, loading, error, fetchTransactions, addTransaction, deleteTransaction } = useTransactions()
 const categoryStore = useCategoryStore()
 
+const getCategoryName = (category) => {
+  if (!category) return 'Sem Categoria';
+  if (typeof category === 'object' && category !== null && category.name) {
+    return category.name;
+  }
+  if (typeof category !== 'string') return 'Inválida';
+  const cat = categoryStore.categories.find(c => c.id === category || c._id === category);
+  return cat ? cat.name : category; // Fallback to ID if not found
+};
+
 const formLoading = ref(false)
 const showForm = ref(false)
 const isCustomCategory = ref(false)
@@ -144,7 +154,7 @@ const existingCategories = computed(() => {
   const fromStore = categoryStore.categories ? categoryStore.categories.map(c => c.name) : []
   
   // Pega categorias usadas em transações existentes (para manter histórico)
-  const fromTransactions = filteredTransactions.value.map(t => t.category)
+  const fromTransactions = filteredTransactions.value.map(t => getCategoryName(t.category))
   
   // Junta tudo e remove duplicadas
   const cats = new Set([
