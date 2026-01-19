@@ -86,14 +86,11 @@ export const useAuthStore = defineStore('auth', {
     /**
      * Limpa os dados de autenticação e redireciona para o login.
      */
-    logout(redirect = true) {
+    logout() {
       this.token = null
       this.user = null
       localStorage.removeItem('token')
       delete apiService.defaults.headers.common['Authorization']
-      if (redirect) {
-        window.location.href = '/login' // Redireciona para a página de login
-      }
     },
   },
 })

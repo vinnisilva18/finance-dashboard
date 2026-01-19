@@ -269,13 +269,13 @@ const handleLogin = async () => {
       router.push('/')
     } else {
       errors.general = result.message || 'Credenciais inválidas'
+      loading.value = false
     }
   } catch (error) {
     // Este erro é para falhas de rede ou problemas inesperados,
     // já que o authStore.login trata erros de API.
     errors.general = 'Erro de conexão ao tentar fazer login. Tente novamente.'
     console.error('Login error:', error)
-  } finally {
     loading.value = false
   }
 }
@@ -296,10 +296,10 @@ const handleRegister = async () => {
       router.push('/')
     } else {
       alert(result.message || 'Erro ao criar conta')
+      loading.value = false
     }
   } catch (error) {
     alert('Erro ao realizar cadastro: ' + (error.message || 'Tente novamente'))
-  } finally {
     loading.value = false
   }
 }
