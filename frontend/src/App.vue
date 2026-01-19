@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container" :key="appKey">
     <!-- Unified Sidebar -->
     <aside v-if="isAuthenticated" class="sidebar" :class="{ 'open': showMobileSidebar, 'collapsed': isSidebarCollapsed }">
       <div class="sidebar-header">
@@ -121,20 +121,32 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onActivated, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
+import { useUIStore } from './stores/ui'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const uiStore = useUIStore()
 
-const showMobileSidebar = ref(false)
-const isSidebarCollapsed = ref(false)
+const appKey = ref(0)
 const notification = ref(null)
 const globalLoading = ref(false)
 const unreadNotifications = ref(3)
 const userColor = ref('#6366f1')
+
+// Use computed properties to get/set from UI store
+const showMobileSidebar = computed({
+  get: () => uiStore.showMobileSidebar,
+  set: (value) => { uiStore.showMobileSidebar = value }
+})
+
+const isSidebarCollapsed = computed({
+  get: () => uiStore.isSidebarCollapsed,
+  set: (value) => { uiStore.isSidebarCollapsed = value }
+})
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const user = computed(() => authStore.user)
@@ -164,24 +176,33 @@ const currentPageTitle = computed(() => {
   return titles[route.path] || 'FinancePro'
 })
 
+// Função para resetar completamente o estado da aplicação
+const resetAppState = () => {
+  uiStore.resetSidebar()
+  notification.value = null
+  globalLoading.value = false
+  userColor.value = '#6366f1'
+}
+
 const toggleSidebar = () => {
-  isSidebarCollapsed.value = !isSidebarCollapsed.value
-  // Salvar preferência no localStorage
-  localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value.toString())
+  uiStore.toggleSidebar()
 }
 
 const toggleSidebarMobile = () => {
-  showMobileSidebar.value = !showMobileSidebar.value
+  uiStore.toggleSidebarMobile()
 }
 
 const logout = () => {
   authStore.logout()
+  resetAppState()
 
-  // Reinicia o estado da sidebar
-  isSidebarCollapsed.value = false
-  showMobileSidebar.value = false
+  // Forçar re-renderização completa do componente
+  appKey.value++
 
-  router.push('/login')
+  // Navegar após pequeno delay para garantir reset
+  setTimeout(() => {
+    router.push('/login')
+  }, 50)
 }
 
 const showNotification = (message, type = 'info') => {
@@ -210,27 +231,38 @@ onMounted(() => {
   }
 })
 
-// Fechar sidebar ao navegar
-watch(() => route.path, () => {
-  showMobileSidebar.value = false
+// Resetar sempre que a rota mudar para login
+watch(() => route.path, (newPath) => {
+  if (newPath === '/login') {
+    resetAppState()
+  }
+  uiStore.closeMobileSidebar()
+})
+
+// Resetar quando o componente for ativado
+onActivated(() => {
+  if (!isAuthenticated.value) {
+    resetAppState()
+  }
 })
 
 // Watch para quando o estado de autenticação mudar
-watch(isAuthenticated, (newValue) => {
+watch(isAuthenticated, async (newValue) => {
+  await nextTick()
   if (!newValue) {
-    // Usuário deslogou - resetar sidebar
-    isSidebarCollapsed.value = false
-    showMobileSidebar.value = false
+    resetAppState()
   } else {
     // Usuário logou - resetar sidebar para estado padrão
-    isSidebarCollapsed.value = false
-    showMobileSidebar.value = false
+    resetAppState()
 
-    // Opcional: restaurar preferência salva
-    const savedSidebarState = localStorage.getItem('sidebarCollapsed')
-    if (savedSidebarState === 'true') {
-      isSidebarCollapsed.value = true
-    }
+    // Opcional: delay para garantir renderização
+    setTimeout(() => {
+      // Opcional: restaurar preferência salva
+      const savedSidebarState = localStorage.getItem('sidebarCollapsed')
+      if (savedSidebarState === 'true') {
+        uiStore.isSidebarCollapsed = true
+      }
+    }, 100)
   }
 })
 </script>
