@@ -195,7 +195,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
@@ -215,7 +215,7 @@ const registerForm = reactive({
 })
 
 const errors = reactive({})
-const loading = computed(() => authStore.loading)
+const loading = ref(false)
 const showPassword = ref(false)
 const showRegister = ref(false)
 
@@ -256,6 +256,8 @@ const handleLogin = async () => {
     return
   }
   
+  loading.value = true
+
   try {
     const result = await authStore.login({
       email: form.email,
@@ -267,17 +269,20 @@ const handleLogin = async () => {
       router.push('/')
     } else {
       errors.general = result.message || 'Credenciais inválidas'
+      loading.value = false
     }
   } catch (error) {
     // Este erro é para falhas de rede ou problemas inesperados,
     // já que o authStore.login trata erros de API.
     errors.general = 'Erro de conexão ao tentar fazer login. Tente novamente.'
     console.error('Login error:', error)
+    loading.value = false
   }
 }
 
 const handleRegister = async () => {
   errors.general = null
+  loading.value = true
   
   try {
     const result = await authStore.register({
@@ -291,9 +296,11 @@ const handleRegister = async () => {
       router.push('/')
     } else {
       alert(result.message || 'Erro ao criar conta')
+      loading.value = false
     }
   } catch (error) {
     alert('Erro ao realizar cadastro: ' + (error.message || 'Tente novamente'))
+    loading.value = false
   }
 }
 </script>

@@ -5,7 +5,6 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: localStorage.getItem('token') || null,
     user: null, // Irá guardar o objeto do usuário: { id, name, email, ... }
-    loading: false,
     error: null,
   }),
   getters: {
@@ -23,7 +22,6 @@ export const useAuthStore = defineStore('auth', {
      * Realiza o login do usuário.
      */
     async login(credentials) {
-      this.loading = true
       this.error = null
       try {
         const response = await apiService.post('/auth/login', credentials)
@@ -44,7 +42,6 @@ export const useAuthStore = defineStore('auth', {
         this.error = errorMessage
         return { success: false, message: errorMessage }
       } finally {
-        this.loading = false
       }
     },
 
@@ -52,7 +49,6 @@ export const useAuthStore = defineStore('auth', {
      * Registra um novo usuário.
      */
     async register(userData) {
-      this.loading = true
       this.error = null
       try {
         const response = await apiService.post('/auth/register', userData)
@@ -67,8 +63,6 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         this.error = error.response?.data?.message || 'Não foi possível criar a conta.'
         return { success: false, message: this.error }
-      } finally {
-        this.loading = false
       }
     },
     /**
