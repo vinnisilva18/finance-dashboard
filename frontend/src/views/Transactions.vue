@@ -72,7 +72,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="transaction in transactions" :key="transaction.id">
+          <tr v-for="transaction in filteredTransactions" :key="transaction._id || transaction.id">
             <td>{{ formatDate(transaction.date) }}</td>
             <td>{{ transaction.description || 'Sem descrição' }}</td>
             <td>{{ getCategoryName(transaction.category) }}</td>
@@ -85,7 +85,7 @@
               {{ formatCurrency(transaction.amount, 'BRL') }}
             </td>
             <td>
-              <button @click="handleDelete(transaction.id)" class="btn btn-danger btn-sm">
+              <button @click="handleDelete(transaction._id || transaction.id)" class="btn btn-danger btn-sm">
                 Excluir
               </button>
             </td>
@@ -99,6 +99,7 @@
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useTransactions } from '../composables/useTransactions'
+import { useCategories } from '../composables/useCategories'
 import { useCategoryStore } from '../stores/category'
 import { formatCurrency, formatDate } from '../utils/formatters'
 
@@ -111,6 +112,7 @@ const props = defineProps({
 
 const { transactions, loading, error, fetchTransactions, addTransaction, deleteTransaction } = useTransactions()
 const categoryStore = useCategoryStore()
+const { fetchCategories, addCategory: createCategory } = useCategories()
 
 const getCategoryName = (category) => {
   if (!category) return 'Sem Categoria';
@@ -135,7 +137,7 @@ const pageTitle = computed(() => {
 
 const filteredTransactions = computed(() => {
   // Filtra transações inválidas (sem ID ou mal formadas) para não quebrar a tela
-  const validTransactions = (transactions.value || []).filter(t => t && t.id)
+  const validTransactions = (transactions.value || []).filter(t => t && (t.id || t._id))
   
   if (!props.transactionType) return validTransactions
   
@@ -184,7 +186,7 @@ const newTransaction = ref({
 
 onMounted(async () => {
   await fetchTransactions()
-  if (categoryStore.fetchCategories) await categoryStore.fetchCategories()
+  await fetchCategories()
 })
 
 const handleCategoryChange = async () => {
@@ -219,11 +221,11 @@ const handleSubmit = async () => {
     const selectedCategoryObj = categories.find(c => c.name === newTransaction.value.category)
     
     if (selectedCategoryObj) {
-      categoryId = selectedCategoryObj.id
+      categoryId = selectedCategoryObj._id || selectedCategoryObj.id
     } else if (newTransaction.value.category) {
       // Se a categoria não existe (ex: digitada manualmente), cria ela antes
-      const newCat = await categoryStore.createCategory({ name: newTransaction.value.category, type: newTransaction.value.type })
-      if (newCat && newCat.id) categoryId = newCat.id
+      const newCat = await createCategory({ name: newTransaction.value.category, type: newTransaction.value.type })
+      if (newCat && (newCat._id || newCat.id)) categoryId = newCat._id || newCat.id
     }
 
     await addTransaction({
