@@ -40,41 +40,29 @@ if (process.env.VERCEL_URL) {
 }
 
 const corsOptions = {
-  origin: function (origin, callback) {
+  origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
-    // Allow all localhost origins for development
-    if (origin.includes('localhost')) return callback(null, true);
-
-    // Allow Vercel preview deployments
-    if (origin.includes('vercel.app')) return callback(null, true);
-
-    // Check against allowed origins
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // Allow all origins in development for ease of use.
+    if (process.env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
 
-    // For production, be more restrictive
-    if (process.env.NODE_ENV === 'production') {
-      console.log('Blocked origin:', origin);
-      return callback(new Error('Not allowed by CORS'), false);
+    // In production, check against the whitelist.
+    if (allowedOrigins.includes(origin) || origin.includes('localhost') || origin.includes('vercel.app')) {
+      return callback(null, true);
     }
 
-    // For development, allow all
-    return callback(null, true);
+    console.log('Blocked origin in production:', origin);
+    return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'Accept',
-    'X-Requested-With',
-    'Access-Control-Request-Method',
-    'Access-Control-Request-Headers'
-  ],
-  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+  // The 'cors' package handles Access-Control-Request-* headers automatically.
+  // We only need to specify headers that can be used in the actual request.
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+  optionsSuccessStatus: 200 // Use 200 for OPTIONS success status for compatibility
 };
 
 // Middleware
@@ -83,9 +71,6 @@ app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-// Handle preflight requests
-app.options('*', cors(corsOptions));
 
 // Test route
 app.get('/api/test', (req, res) => {
@@ -135,7 +120,7 @@ module.exports = app;
 
 // For local development, start the server
 if (require.main === module) {
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.PORT || 3001;
   const server = app.listen(PORT, () => {
     console.log(`
     ===========================================

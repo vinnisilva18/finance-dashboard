@@ -1,3 +1,4 @@
+// stores/ui.js
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -7,12 +8,6 @@ export const useUIStore = defineStore('ui', () => {
   
   const toggleSidebar = () => {
     isSidebarCollapsed.value = !isSidebarCollapsed.value
-    // Salvar preferência apenas se o usuário estiver autenticado
-    if (isSidebarCollapsed.value) {
-      localStorage.setItem('sidebarCollapsed', 'true')
-    } else {
-      localStorage.removeItem('sidebarCollapsed')
-    }
   }
   
   const toggleSidebarMobile = () => {
@@ -26,7 +21,6 @@ export const useUIStore = defineStore('ui', () => {
   const resetSidebar = () => {
     isSidebarCollapsed.value = false
     showMobileSidebar.value = false
-    localStorage.removeItem('sidebarCollapsed')
   }
   
   return {

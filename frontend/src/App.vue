@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" :key="appKey">
+  <div class="app-container">
     <!-- Unified Sidebar -->
     <aside v-if="isAuthenticated" class="sidebar" :class="{ 'open': showMobileSidebar, 'collapsed': isSidebarCollapsed }">
       <div class="sidebar-header">
@@ -27,42 +27,42 @@
         </div>
 
         <nav class="sidebar-nav">
-          <router-link to="/" class="nav-item" exact-active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Painel' : ''">
+          <router-link to="/" class="nav-item" exact-active-class="active" @click="closeMobileSidebar" :title="isSidebarCollapsed ? 'Painel' : ''">
             <span class="nav-icon">📊</span>
             <span class="nav-text" v-show="!isSidebarCollapsed">Painel</span>
           </router-link>
 
-          <router-link to="/transactions" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Transações' : ''">
+          <router-link to="/transactions" class="nav-item" active-class="active" @click="closeMobileSidebar" :title="isSidebarCollapsed ? 'Transações' : ''">
             <span class="nav-icon">💳</span>
             <span class="nav-text" v-show="!isSidebarCollapsed">Transações</span>
           </router-link>
 
-          <router-link to="/categories" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Categorias' : ''">
+          <router-link to="/categories" class="nav-item" active-class="active" @click="closeMobileSidebar" :title="isSidebarCollapsed ? 'Categorias' : ''">
             <span class="nav-icon">🏷️</span>
             <span class="nav-text" v-show="!isSidebarCollapsed">Categorias</span>
           </router-link>
 
-          <router-link to="/credit-cards" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Cartões' : ''">
+          <router-link to="/credit-cards" class="nav-item" active-class="active" @click="closeMobileSidebar" :title="isSidebarCollapsed ? 'Cartões' : ''">
             <span class="nav-icon">💳</span>
             <span class="nav-text" v-show="!isSidebarCollapsed">Cartões</span>
           </router-link>
 
-          <router-link to="/goals" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Metas' : ''">
+          <router-link to="/goals" class="nav-item" active-class="active" @click="closeMobileSidebar" :title="isSidebarCollapsed ? 'Metas' : ''">
             <span class="nav-icon">🎯</span>
             <span class="nav-text" v-show="!isSidebarCollapsed">Metas</span>
           </router-link>
 
-          <router-link to="/reports" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Relatórios' : ''">
+          <router-link to="/reports" class="nav-item" active-class="active" @click="closeMobileSidebar" :title="isSidebarCollapsed ? 'Relatórios' : ''">
             <span class="nav-icon">📈</span>
             <span class="nav-text" v-show="!isSidebarCollapsed">Relatórios</span>
           </router-link>
 
-          <router-link to="/currency" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Câmbio' : ''">
+          <router-link to="/currency" class="nav-item" active-class="active" @click="closeMobileSidebar" :title="isSidebarCollapsed ? 'Câmbio' : ''">
             <span class="nav-icon">🌎</span>
             <span class="nav-text" v-show="!isSidebarCollapsed">Câmbio</span>
           </router-link>
 
-          <router-link to="/profile" class="nav-item" active-class="active" @click="showMobileSidebar = false" :title="isSidebarCollapsed ? 'Perfil' : ''">
+          <router-link to="/profile" class="nav-item" active-class="active" @click="closeMobileSidebar" :title="isSidebarCollapsed ? 'Perfil' : ''">
             <span class="nav-icon">👤</span>
             <span class="nav-text" v-show="!isSidebarCollapsed">Perfil</span>
           </router-link>
@@ -121,7 +121,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onActivated, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { useUIStore } from './stores/ui'
@@ -131,13 +131,14 @@ const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 
+// Chave para forçar re-renderização
 const appKey = ref(0)
 const notification = ref(null)
 const globalLoading = ref(false)
 const unreadNotifications = ref(3)
 const userColor = ref('#6366f1')
 
-// Use computed properties to get/set from UI store
+// Computed properties para UI store
 const showMobileSidebar = computed({
   get: () => uiStore.showMobileSidebar,
   set: (value) => { uiStore.showMobileSidebar = value }
@@ -182,10 +183,19 @@ const resetAppState = () => {
   notification.value = null
   globalLoading.value = false
   userColor.value = '#6366f1'
+  
+  // Limpar localStorage da sidebar
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('sidebarCollapsed')
+  }
 }
 
 const toggleSidebar = () => {
   uiStore.toggleSidebar()
+  // Salvar preferência apenas se autenticado
+  if (isAuthenticated.value) {
+    localStorage.setItem('sidebarCollapsed', uiStore.isSidebarCollapsed.toString())
+  }
 }
 
 const toggleSidebarMobile = () => {
@@ -193,19 +203,22 @@ const toggleSidebarMobile = () => {
 }
 
 const logout = async () => {
-  // Resetar estado antes de fazer logout
+  console.log('Iniciando logout...')
+  
+  // 1. Resetar estado da UI primeiro
   resetAppState()
   
-  // Fazer logout
+  // 2. Fazer logout na store
   authStore.logout()
   
-  // Forçar re-renderização completa
+  // 3. Forçar re-renderização completa
   appKey.value++
   
-  // Aguardar próximo ciclo de renderização
+  // 4. Aguardar próximo ciclo
   await nextTick()
   
-  // Navegar para login
+  // 5. Navegar para login
+  console.log('Navegando para login...')
   router.push('/login')
 }
 
@@ -230,7 +243,10 @@ onMounted(() => {
   if (isAuthenticated.value) {
     const savedSidebarState = localStorage.getItem('sidebarCollapsed')
     if (savedSidebarState === 'true') {
-      uiStore.isSidebarCollapsed = true
+      // Pequeno delay para garantir que o DOM esteja pronto
+      setTimeout(() => {
+        uiStore.isSidebarCollapsed = true
+      }, 100)
     }
   } else {
     // Garantir que sidebar esteja resetada se não autenticado
@@ -238,7 +254,7 @@ onMounted(() => {
   }
 })
 
-// Watch para a rota - IMPORTANTE: simplificado
+// Watch para a rota - simplificado
 watch(() => route.path, (newPath) => {
   // Fechar sidebar mobile sempre que a rota mudar
   uiStore.closeMobileSidebar()
@@ -246,30 +262,29 @@ watch(() => route.path, (newPath) => {
   // Se navegou para login, resetar completamente
   if (newPath === '/login') {
     resetAppState()
-    localStorage.removeItem('sidebarCollapsed')
   }
 })
 
-// Watch para autenticação - CORREÇÃO IMPORTANTE
+// Watch para autenticação - correção principal
 watch(isAuthenticated, (newValue, oldValue) => {
-  console.log('Auth changed from', oldValue, 'to', newValue)
-
-  if (!newValue && oldValue !== undefined) {
-    // Usuário acabou de fazer logout
+  console.log('Auth state changed:', { old: oldValue, new: newValue })
+  
+  if (!newValue) {
+    // Usuário fez logout - resetar tudo
     resetAppState()
   } else if (newValue && oldValue === false) {
     // Usuário acabou de fazer login
     resetAppState()
-    // Sempre expandir a sidebar no login para melhor UX
+    
+    // Pequeno delay para garantir renderização e depois restaurar preferência
+    setTimeout(() => {
+      const savedSidebarState = localStorage.getItem('sidebarCollapsed')
+      if (savedSidebarState === 'true') {
+        uiStore.isSidebarCollapsed = true
+      }
+    }, 150)
   }
 })
-
-// Adicionar para debug
-watch([() => uiStore.isSidebarCollapsed, () => uiStore.showMobileSidebar], 
-  ([collapsed, mobile]) => {
-    console.log('UI State:', { collapsed, mobile, isAuthenticated: isAuthenticated.value })
-  }
-)
 </script>
 
 <style scoped>
@@ -784,20 +799,35 @@ watch([() => uiStore.isSidebarCollapsed, () => uiStore.showMobileSidebar],
     transform: translateX(-100%);
     z-index: 100;
   }
-  
+
   .sidebar.open {
     transform: translateX(0);
   }
-  
+
   .sidebar.collapsed,
   .sidebar:not(.collapsed) {
     width: 280px; /* Largura fixa em mobile */
   }
-  
+
   .main-content.with-sidebar,
   .main-content.collapsed {
     margin-left: 0 !important;
     width: 100% !important;
   }
+}
+
+/* Reset visual quando não autenticado */
+.app-container:not(:has(.sidebar)) .main-content {
+  margin-left: 0 !important;
+}
+
+/* Garantir que overlay desapareça */
+.sidebar-overlay {
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay:not(.show) {
+  opacity: 0;
+  pointer-events: none;
 }
 </style>
