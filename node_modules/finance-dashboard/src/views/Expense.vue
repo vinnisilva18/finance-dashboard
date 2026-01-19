@@ -341,7 +341,8 @@ const viewOptions = [
 
 // Methods
 const getCategoryIcon = (categoryId) => {
-  const category = categoryStore.categories.find(c => c.id === categoryId)
+  if (!categoryId) return 'category';
+  const category = categoryStore.categories.find(c => c.id === categoryId || c._id === categoryId);
   if (category) {
     return category.icon || 'category'
   }
@@ -349,8 +350,24 @@ const getCategoryIcon = (categoryId) => {
 }
 
 const getCategoryName = (categoryId) => {
-  const category = categoryStore.categories.find(c => c.id === categoryId)
-  return category ? category.name : 'Categoria não encontrada'
+  if (!categoryId) return 'Sem Categoria';
+
+  if (typeof categoryId === 'object' && categoryId !== null && categoryId.name) {
+    return categoryId.name;
+  }
+
+  if (typeof categoryId !== 'string') return 'Categoria Inválida';
+
+  const category = categoryStore.categories.find(c => c.id === categoryId || c._id === categoryId);
+  if (category) {
+    return category.name;
+  }
+
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(categoryId);
+  if (isObjectId) {
+    return 'Sem Categoria';
+  }
+  return categoryId;
 }
 
 const getPaymentMethodLabel = (method) => {

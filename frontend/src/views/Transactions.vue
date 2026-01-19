@@ -120,8 +120,23 @@ const getCategoryName = (category) => {
     return category.name;
   }
   if (typeof category !== 'string') return 'Inválida';
+
+  // 1. Tenta encontrar a categoria na store pelo ID.
   const cat = categoryStore.categories.find(c => c.id === category || c._id === category);
-  return cat ? cat.name : category; // Fallback to ID if not found
+  if (cat) {
+    return cat.name;
+  }
+
+  // 2. Se não encontrar, verifica se o valor é um formato de ObjectId do MongoDB.
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(category);
+  if (isObjectId) {
+    // Se for um ID, mas a categoria não foi encontrada (pode ter sido deletada),
+    // retorna um placeholder para não exibir o ID na tela.
+    return 'Sem Categoria';
+  }
+
+  // 3. Se não for um ID, é provável que seja um nome de categoria antigo (legado). Exibe o nome.
+  return category;
 };
 
 const formLoading = ref(false)
