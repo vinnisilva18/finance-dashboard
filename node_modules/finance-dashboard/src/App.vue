@@ -253,21 +253,14 @@ watch(() => route.path, (newPath) => {
 // Watch para autenticação - CORREÇÃO IMPORTANTE
 watch(isAuthenticated, (newValue, oldValue) => {
   console.log('Auth changed from', oldValue, 'to', newValue)
-  
+
   if (!newValue && oldValue !== undefined) {
     // Usuário acabou de fazer logout
     resetAppState()
   } else if (newValue && oldValue === false) {
     // Usuário acabou de fazer login
     resetAppState()
-    
-    // Pequeno delay para garantir renderização e depois restaurar preferência
-    setTimeout(() => {
-      const savedSidebarState = localStorage.getItem('sidebarCollapsed')
-      if (savedSidebarState === 'true') {
-        uiStore.isSidebarCollapsed = true
-      }
-    }, 150)
+    // Sempre expandir a sidebar no login para melhor UX
   }
 })
 
@@ -278,59 +271,6 @@ watch([() => uiStore.isSidebarCollapsed, () => uiStore.showMobileSidebar],
   }
 )
 </script>
-
-<style scoped>
-/* ADICIONE ESTAS REGRAS NO FINAL DO SEU CSS */
-
-/* Garantir transições suaves */
-.sidebar {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-              width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.main-content {
-  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Garantir que quando não autenticado, o conteúdo ocupe 100% */
-.app-container:has(.main-content:not(.with-sidebar)) .main-content {
-  margin-left: 0 !important;
-  width: 100% !important;
-}
-
-/* Correção para quando sidebar está colapsada */
-.sidebar.collapsed ~ .main-content.collapsed {
-  margin-left: 80px !important;
-}
-
-/* Correção para quando sidebar está expandida */
-.sidebar:not(.collapsed) ~ .main-content.with-sidebar:not(.collapsed) {
-  margin-left: 280px !important;
-}
-
-/* Garantir que a sidebar móvel funcione corretamente */
-@media (max-width: 1024px) {
-  .sidebar {
-    transform: translateX(-100%);
-    z-index: 100;
-  }
-  
-  .sidebar.open {
-    transform: translateX(0);
-  }
-  
-  .sidebar.collapsed,
-  .sidebar:not(.collapsed) {
-    width: 280px; /* Largura fixa em mobile */
-  }
-  
-  .main-content.with-sidebar,
-  .main-content.collapsed {
-    margin-left: 0 !important;
-    width: 100% !important;
-  }
-}
-</style>
 
 <style scoped>
 .app-container {
@@ -807,6 +747,57 @@ watch([() => uiStore.isSidebarCollapsed, () => uiStore.showMobileSidebar],
   .user-info {
     flex-direction: column;
     text-align: center;
+  }
+}
+
+/* ADICIONE ESTAS REGRAS NO FINAL DO SEU CSS */
+
+/* Garantir transições suaves */
+.sidebar {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.main-content {
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Garantir que quando não autenticado, o conteúdo ocupe 100% */
+.app-container:has(.main-content:not(.with-sidebar)) .main-content {
+  margin-left: 0 !important;
+  width: 100% !important;
+}
+
+/* Correção para quando sidebar está colapsada */
+.sidebar.collapsed ~ .main-content.collapsed {
+  margin-left: 80px !important;
+}
+
+/* Correção para quando sidebar está expandida */
+.sidebar:not(.collapsed) ~ .main-content.with-sidebar:not(.collapsed) {
+  margin-left: 280px !important;
+}
+
+/* Garantir que a sidebar móvel funcione corretamente */
+@media (max-width: 1024px) {
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: 100;
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .sidebar.collapsed,
+  .sidebar:not(.collapsed) {
+    width: 280px; /* Largura fixa em mobile */
+  }
+  
+  .main-content.with-sidebar,
+  .main-content.collapsed {
+    margin-left: 0 !important;
+    width: 100% !important;
   }
 }
 </style>
