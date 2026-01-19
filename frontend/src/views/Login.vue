@@ -265,7 +265,8 @@ const handleLogin = async () => {
     })
     
     if (result.success) {
-      // Navegar imediatamente sem delay
+      // Se o login for bem-sucedido, apenas navega para o dashboard.
+      // O estado de 'loading' não precisa ser desativado aqui, pois o componente será destruído.
       router.push('/')
     } else {
       errors.general = result.message || 'Credenciais inválidas'

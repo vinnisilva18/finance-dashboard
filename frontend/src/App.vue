@@ -8,7 +8,7 @@
           <h1 v-show="!isSidebarCollapsed">Finance<span>Pro</span></h1>
         </div>
         <button @click="toggleSidebar" class="sidebar-collapse-desktop">
-          <span>☰</span>
+          <span>◁</span>
         </button>
         <button @click="toggleSidebarMobile" class="sidebar-toggle">
           <span>×</span>
@@ -69,7 +69,7 @@
         </nav>
 
         <div class="sidebar-footer">
-          <button @click="logout" class="logout-btn" :title="isSidebarCollapsed ? 'Sair' : ''">
+          <button @click.stop="logout" class="logout-btn" :title="isSidebarCollapsed ? 'Sair' : ''">
             <span class="logout-icon">🚪</span>
             <span v-show="!isSidebarCollapsed">Sair</span>
           </button>
@@ -166,6 +166,8 @@ const currentPageTitle = computed(() => {
 
 const toggleSidebar = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
+  // Salvar preferência no localStorage
+  localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.value.toString())
 }
 
 const toggleSidebarMobile = () => {
@@ -174,8 +176,12 @@ const toggleSidebarMobile = () => {
 
 const logout = () => {
   authStore.logout()
-  router.push('/login')
+
+  // Reinicia o estado da sidebar
+  isSidebarCollapsed.value = false
   showMobileSidebar.value = false
+
+  router.push('/login')
 }
 
 const showNotification = (message, type = 'info') => {
@@ -194,11 +200,38 @@ onMounted(() => {
   if (savedColor) {
     userColor.value = savedColor
   }
+
+  // Restaurar estado da sidebar apenas se estiver autenticado
+  if (isAuthenticated.value) {
+    const savedSidebarState = localStorage.getItem('sidebarCollapsed')
+    if (savedSidebarState === 'true') {
+      isSidebarCollapsed.value = true
+    }
+  }
 })
 
 // Fechar sidebar ao navegar
 watch(() => route.path, () => {
   showMobileSidebar.value = false
+})
+
+// Watch para quando o estado de autenticação mudar
+watch(isAuthenticated, (newValue) => {
+  if (!newValue) {
+    // Usuário deslogou - resetar sidebar
+    isSidebarCollapsed.value = false
+    showMobileSidebar.value = false
+  } else {
+    // Usuário logou - resetar sidebar para estado padrão
+    isSidebarCollapsed.value = false
+    showMobileSidebar.value = false
+
+    // Opcional: restaurar preferência salva
+    const savedSidebarState = localStorage.getItem('sidebarCollapsed')
+    if (savedSidebarState === 'true') {
+      isSidebarCollapsed.value = true
+    }
+  }
 })
 </script>
 
@@ -618,14 +651,20 @@ watch(() => route.path, () => {
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .main-content.with-sidebar {
+  /* Garantir que a sidebar esteja fechada por padrão em mobile */
+  .sidebar:not(.open) {
+    transform: translateX(-100%);
+  }
+
+  .main-content.with-sidebar,
+  .main-content.collapsed {
     margin-left: 0;
   }
-  
+
   .sidebar {
     transform: translateX(-100%);
   }
-  
+
   .sidebar.open {
     transform: translateX(0);
   }
@@ -633,11 +672,11 @@ watch(() => route.path, () => {
   .sidebar-toggle {
     display: flex;
   }
-  
+
   .menu-toggle {
     display: flex;
   }
-  
+
   .mobile-only {
     display: block;
   }
