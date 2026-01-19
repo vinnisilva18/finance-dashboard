@@ -5,6 +5,8 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: localStorage.getItem('token') || null,
     user: null, // Irá guardar o objeto do usuário: { id, name, email, ... }
+    loading: false,
+    error: null,
   }),
   getters: {
     /**
@@ -17,6 +19,58 @@ export const useAuthStore = defineStore('auth', {
     userName: (state) => state.user?.name || 'Usuário',
   },
   actions: {
+    /**
+     * Realiza o login do usuário.
+     */
+    async login(credentials) {
+      this.loading = true
+      this.error = null
+      try {
+        const response = await apiService.post('/auth/login', credentials)
+        const { token, user } = response.data
+
+        if (!token || !user) {
+          throw new Error('Resposta de login inválida do servidor.')
+        }
+
+        this.token = token
+        this.user = user
+        localStorage.setItem('token', token)
+        apiService.defaults.headers.common['Authorization'] = `Bearer ${token}`
+
+        return { success: true }
+      } catch (error) {
+        const errorMessage = error.response?.data?.message || 'E-mail ou senha inválidos.'
+        this.error = errorMessage
+        return { success: false, message: errorMessage }
+      } finally {
+        this.loading = false
+      }
+    },
+
+    /**
+     * Registra um novo usuário.
+     */
+    async register(userData) {
+      this.loading = true
+      this.error = null
+      try {
+        const response = await apiService.post('/auth/register', userData)
+        const { token, user } = response.data
+
+        this.token = token
+        this.user = user
+        localStorage.setItem('token', token)
+        apiService.defaults.headers.common['Authorization'] = `Bearer ${token}`
+
+        return { success: true }
+      } catch (error) {
+        this.error = error.response?.data?.message || 'Não foi possível criar a conta.'
+        return { success: false, message: this.error }
+      } finally {
+        this.loading = false
+      }
+    },
     /**
      * Busca os dados do usuário logado a partir do backend.
      */
@@ -31,19 +85,21 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         console.error('Falha ao buscar dados do usuário. O token pode ser inválido.', error)
         // Se falhar, o token provavelmente é inválido, então deslogamos.
-        this.logout()
+        this.logout(false)
       }
     },
 
     /**
      * Limpa os dados de autenticação e redireciona para o login.
      */
-    logout() {
+    logout(redirect = true) {
       this.token = null
       this.user = null
       localStorage.removeItem('token')
       delete apiService.defaults.headers.common['Authorization']
-      window.location.href = '/login' // Redireciona para a página de login
+      if (redirect) {
+        window.location.href = '/login' // Redireciona para a página de login
+      }
     },
   },
 })

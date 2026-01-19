@@ -47,6 +47,11 @@
         </div>
 
         <form @submit.prevent="handleLogin" class="login-form">
+          <!-- General Error Message -->
+          <div v-if="errors.general" class="general-error-message">
+            {{ errors.general }}
+          </div>
+
           <!-- Email Field -->
           <div class="form-group">
             <label for="email">E-mail</label>
@@ -253,9 +258,6 @@ const handleLogin = async () => {
   
   loading.value = true
   
-  // Limpa qualquer token antigo para evitar conflitos
-  localStorage.removeItem('token')
-  
   try {
     const result = await authStore.login({
       email: form.email,
@@ -263,21 +265,16 @@ const handleLogin = async () => {
     })
     
     if (result.success) {
-      // Garante que o token e usuário sejam salvos para o apiService usar
-      const token = result.token || (result.data && result.data.token)
-      const user = result.user || (result.data && result.data.user)
-      
-      if (token) localStorage.setItem('token', token)
-      if (user) localStorage.setItem('user', JSON.stringify(user))
-      
       // Navegar imediatamente sem delay
       router.push('/')
     } else {
       errors.general = result.message || 'Credenciais inválidas'
-      loading.value = false
     }
   } catch (error) {
-    errors.general = 'Erro ao fazer login. Tente novamente.'
+    // Este erro é para falhas de rede ou problemas inesperados,
+    // já que o authStore.login trata erros de API.
+    errors.general = 'Erro de conexão ao tentar fazer login. Tente novamente.'
+    console.error('Login error:', error)
   } finally {
     loading.value = false
   }
@@ -285,30 +282,20 @@ const handleLogin = async () => {
 
 const handleRegister = async () => {
   loading.value = true
-  // Limpa qualquer token antigo antes de registrar
-  localStorage.removeItem('token')
+  errors.general = null
   
   try {
-    // Assume que a store tem uma action 'register' que chama a API /api/auth/register
-    // e salva o token/usuário igual ao login
     const result = await authStore.register({
       name: registerForm.name,
       email: registerForm.email,
       password: registerForm.password
     })
 
-    if (result && result.success) {
-      // Garante que o token e usuário sejam salvos após o cadastro
-      const token = result.token || (result.data && result.data.token)
-      const user = result.user || (result.data && result.data.user)
-      
-      if (token) localStorage.setItem('token', token)
-      if (user) localStorage.setItem('user', JSON.stringify(user))
-      
+    if (result.success) {
       showRegister.value = false
       router.push('/')
     } else {
-      alert(result?.message || 'Erro ao criar conta')
+      alert(result.message || 'Erro ao criar conta')
     }
   } catch (error) {
     alert('Erro ao realizar cadastro: ' + (error.message || 'Tente novamente'))
@@ -586,6 +573,17 @@ const handleRegister = async () => {
 .error-message {
   font-size: 0.875rem;
   color: var(--danger-400);
+}
+
+.general-error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  border: 1px solid #f5c6cb;
 }
 
 .password-header {
