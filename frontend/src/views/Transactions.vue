@@ -230,17 +230,33 @@ const handleSubmit = async () => {
     const [year, month, day] = newTransaction.value.date.split('-').map(Number)
     const dateAdjusted = new Date(year, month - 1, day, 12, 0, 0)
 
-    // Encontra o ID da categoria baseado no nome selecionado
-    let categoryId = newTransaction.value.category
-    const categories = categoryStore.categories || []
-    const selectedCategoryObj = categories.find(c => c.name === newTransaction.value.category)
-    
-    if (selectedCategoryObj) {
-      categoryId = selectedCategoryObj._id || selectedCategoryObj.id
-    } else if (newTransaction.value.category) {
-      // Se a categoria não existe (ex: digitada manualmente), cria ela antes
-      const newCat = await createCategory({ name: newTransaction.value.category, type: newTransaction.value.type })
-      if (newCat && (newCat._id || newCat.id)) categoryId = newCat._id || newCat.id
+    // Garante que a categoria selecionada tenha um ID válido.
+    // Se for um nome (string), procura ou cria a categoria no banco.
+    let categoryId = null;
+    const categoryName = newTransaction.value.category;
+
+    if (!categoryName) {
+      alert('Por favor, selecione ou crie uma categoria.');
+      formLoading.value = false;
+      return;
+    }
+
+    const existingCategory = categoryStore.categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+
+    if (existingCategory) {
+      categoryId = existingCategory._id || existingCategory.id;
+    } else {
+      // Se a categoria não existe (ex: 'Mercado' ou uma nova digitada), cria ela.
+      const newCat = await createCategory({ name: categoryName, type: newTransaction.value.type });
+      if (newCat && (newCat._id || newCat.id)) {
+        categoryId = newCat._id || newCat.id;
+      }
+    }
+
+    if (!categoryId) {
+      alert('Ocorreu um erro ao processar a categoria. Tente novamente.');
+      formLoading.value = false;
+      return;
     }
 
     await addTransaction({
