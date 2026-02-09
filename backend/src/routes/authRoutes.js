@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const auth = require('../middleware/authMiddleware'); // Import centralized middleware
 
 const router = express.Router();
 
@@ -32,7 +33,7 @@ router.post('/register', async (req, res) => {
     // Create token
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET || 'your-secret-key',
+      process.env.JWT_SECRET, // Use environment variable exclusively
       { expiresIn: '7d' }
     );
 
@@ -56,7 +57,7 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
@@ -70,7 +71,7 @@ router.post('/login', async (req, res) => {
     // Create token
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET || 'your-secret-key',
+      process.env.JWT_SECRET, // Use environment variable exclusively
       { expiresIn: '7d' }
     );
 
@@ -88,18 +89,14 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Get current user
-router.get('/me', async (req, res) => {
+// Get current user (protected by auth middleware)
+router.get('/me', auth, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ message: 'No token provided' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    const user = await User.findById(decoded.userId).select('-password');
+    // req.userId is added by the auth middleware
+    const user = await User.findById(req.userId).select('-password');
 
     if (!user) {
+      // This case might happen if the user was deleted after the token was issued
       return res.status(404).json({ message: 'User not found' });
     }
 
@@ -110,7 +107,7 @@ router.get('/me', async (req, res) => {
     });
   } catch (error) {
     console.error('Get user error:', error);
-    res.status(401).json({ message: 'Invalid token' });
+    res.status(500).json({ message: 'Server error while fetching user profile' });
   }
 });
 

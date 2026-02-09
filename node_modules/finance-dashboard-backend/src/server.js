@@ -25,48 +25,8 @@ const app = express();
 // Connect to database
 connectDB();
 
-// CORS configuration - More permissive for all environments
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://finance-dashboard-rich.vercel.app',
-  'https://finance-dashboard-frontend.vercel.app',
-  'https://finance-dashboard-backend-ashy.vercel.app'
-];
-
-// Add Vercel URLs dynamically
-if (process.env.VERCEL_URL) {
-  allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
-}
-
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-
-    // Allow all origins in development for ease of use.
-    if (process.env.NODE_ENV !== 'production') {
-      return callback(null, true);
-    }
-
-    // In production, check against the whitelist.
-    if (allowedOrigins.includes(origin) || origin.includes('localhost') || origin.includes('vercel.app')) {
-      return callback(null, true);
-    }
-
-    console.log('Blocked origin in production:', origin);
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  // The 'cors' package handles Access-Control-Request-* headers automatically.
-  // We only need to specify headers that can be used in the actual request.
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
-  optionsSuccessStatus: 200 // Use 200 for OPTIONS success status for compatibility
-};
-
 // Middleware
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());

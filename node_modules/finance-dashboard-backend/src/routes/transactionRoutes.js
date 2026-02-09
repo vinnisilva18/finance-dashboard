@@ -1,24 +1,10 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
+const auth = require('../middleware/authMiddleware'); // Use the centralized middleware
 const Transaction = require('../models/Transaction');
+const Category = require('../models/Category');
+const mongoose = require('mongoose');
 
 const router = express.Router();
-
-// Middleware to verify token
-const auth = (req, res, next) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ message: 'No token provided' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    req.userId = decoded.userId;
-    next();
-  } catch (error) {
-    res.status(401).json({ message: 'Invalid token' });
-  }
-};
 
 // Get all transactions
 router.get('/', auth, async (req, res) => {
@@ -49,6 +35,162 @@ router.get('/', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Get transactions error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get summary
+router.get('/summary', auth, async (req, res) => {
+  try {
+    const { year, month } = req.query;
+
+    const date = new Date();
+    const currentYear = year ? parseInt(year) : date.getFullYear();
+    // month is 1-based in the request, but 0-based in JavaScript's Date
+    const currentMonth = month ? parseInt(month) - 1 : date.getMonth(); 
+
+    const startDate = new Date(currentYear, currentMonth, 1);
+    const endDate = new Date(currentYear, currentMonth + 1, 0);
+
+    const summary = await Transaction.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(req.userId),
+          date: { $gte: startDate, $lte: endDate }
+        }
+      },
+      {
+        $group: {
+          _id: '$type',
+          total: { $sum: '$amount' }
+        }
+      }
+    ]);
+
+    let totalIncome = 0;
+    let totalExpense = 0;
+
+    summary.forEach(item => {
+      if (item._id === 'income') {
+        totalIncome = item.total;
+      } else if (item._id === 'expense') {
+        totalExpense = item.total;
+      }
+    });
+
+    res.json({
+      totalIncome,
+      totalExpense,
+      balance: totalIncome - totalExpense,
+      startDate,
+      endDate
+    });
+  } catch (error) {
+    console.error('Get summary error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get monthly stats (income/expenses/investments)
+router.get('/stats/monthly', auth, async (req, res) => {
+  try {
+    const { month, year } = req.query;
+    const parsedMonth = parseInt(month, 10);
+    const parsedYear = parseInt(year, 10);
+
+    if (!parsedMonth || !parsedYear || parsedMonth < 1 || parsedMonth > 12) {
+      return res.status(400).json({ message: 'Invalid month or year' });
+    }
+
+    const startDate = new Date(parsedYear, parsedMonth - 1, 1);
+    const endDate = new Date(parsedYear, parsedMonth, 0, 23, 59, 59, 999);
+
+    const userObjectId = new mongoose.Types.ObjectId(req.userId);
+
+    const investmentCategories = await Category.find({
+      userId: userObjectId,
+      name: /investiment/i
+    }).select('_id');
+
+    const investmentCategoryIds = investmentCategories.map(c => c._id);
+
+    const notInvestmentExpr = investmentCategoryIds.length
+      ? { $not: [{ $in: ['$category', investmentCategoryIds] }] }
+      : true;
+
+    const [summary] = await Transaction.aggregate([
+      {
+        $match: {
+          userId: userObjectId,
+          date: { $gte: startDate, $lte: endDate }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalIncome: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ['$type', 'income'] }, notInvestmentExpr] },
+                { $abs: '$amount' },
+                0
+              ]
+            }
+          },
+          totalExpenses: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ['$type', 'expense'] }, notInvestmentExpr] },
+                { $abs: '$amount' },
+                0
+              ]
+            }
+          },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    let totalInvestments = 0;
+    if (investmentCategoryIds.length > 0) {
+      const [investments] = await Transaction.aggregate([
+        {
+          $match: {
+            userId: userObjectId,
+            date: { $gte: startDate, $lte: endDate },
+            category: { $in: investmentCategoryIds }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalInvestments: { $sum: { $abs: '$amount' } }
+          }
+        }
+      ]);
+      totalInvestments = investments?.totalInvestments || 0;
+    }
+
+    const totalIncome = summary?.totalIncome || 0;
+    const totalExpenses = summary?.totalExpenses || 0;
+    const count = summary?.count || 0;
+    const netBalance = totalIncome - totalExpenses;
+    const netBalanceAfterInvestments = netBalance - totalInvestments;
+
+    res.json({
+      month: parsedMonth,
+      year: parsedYear,
+      startDate,
+      endDate,
+      totalIncome,
+      totalExpenses,
+      totalInvestments,
+      netBalance,
+      netBalanceAfterInvestments,
+      count
+    });
+  } catch (error) {
+    console.error('Get monthly stats error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

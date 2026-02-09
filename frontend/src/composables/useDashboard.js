@@ -1,5 +1,5 @@
 import { ref, computed, onMounted } from 'vue'
-import { useTransactions } from './useTransactions'
+import apiService from '../services/apiService'
 import { useCategories } from './useCategories'
 import { useGoals } from './useGoals'
 import { useCards } from './useCards'
@@ -8,8 +8,17 @@ export const useDashboard = () => {
   const loading = ref(false)
   const error = ref(null)
 
+  const selectedMonth = ref(new Date().getMonth() + 1)
+  const selectedYear = ref(new Date().getFullYear())
+
+  const currentMonthName = computed(() => {
+    const date = new Date(selectedYear.value, selectedMonth.value - 1, 1)
+    return date.toLocaleDateString('pt-BR', { month: 'long' })
+  })
+
+  const currentYear = computed(() => selectedYear.value)
+
   // Composables para buscar dados da API
-  const { transactions, fetchTransactions } = useTransactions()
   const { categories: allCategories, fetchCategories } = useCategories()
   const { goals: allGoals, fetchGoals } = useGoals()
   const { cards: allCards, fetchCards } = useCards()
@@ -41,21 +50,78 @@ export const useDashboard = () => {
     ],
   })
 
+  const getMonthRange = (year, month) => {
+    const startDate = new Date(year, month - 1, 1)
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999)
+    return { startDate, endDate }
+  }
+
+  const normalizeTransactions = (response) => {
+    let transactionsData = []
+
+    if (Array.isArray(response.data)) {
+      transactionsData = response.data
+    } else if (response.data && Array.isArray(response.data.transactions)) {
+      transactionsData = response.data.transactions
+    } else if (response.data && Array.isArray(response.data.data)) {
+      transactionsData = response.data.data
+    }
+
+    return transactionsData.map(t => ({
+      ...t,
+      id: t._id || t.id,
+      _id: t._id || t.id
+    }))
+  }
+
+  const fetchTransactionsRange = async (startDate, endDate) => {
+    const response = await apiService.get('/transactions', {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      limit: 1000
+    })
+
+    return normalizeTransactions(response)
+  }
+
   const fetchData = async () => {
     loading.value = true
     error.value = null
     
     try {
-      // Buscar todos os dados da API em paralelo
-      await Promise.all([
-        fetchTransactions(),
+      const { startDate, endDate } = getMonthRange(selectedYear.value, selectedMonth.value)
+      const chartStartDate = new Date(selectedYear.value, selectedMonth.value - 1 - 11, 1)
+      const chartEndDate = endDate
+
+      const [
+        monthlyStatsResponse,
+        monthTransactions,
+        chartTransactions
+      ] = await Promise.all([
+        apiService.get('/transactions/stats/monthly', {
+          month: selectedMonth.value,
+          year: selectedYear.value
+        }),
+        fetchTransactionsRange(startDate, endDate),
+        fetchTransactionsRange(chartStartDate, chartEndDate),
         fetchCategories(),
         fetchGoals(),
         fetchCards()
       ])
 
-      // Processar dados após buscar da API
-      processData()
+      const monthlyStats = monthlyStatsResponse?.data || {}
+
+      stats.value = {
+        income: monthlyStats.totalIncome || 0,
+        expenses: monthlyStats.totalExpenses || 0,
+        savings: monthlyStats.netBalance || 0,
+        investments: monthlyStats.totalInvestments || 0
+      }
+
+      totalBalance.value = monthlyStats.netBalance || 0
+
+      // Processar dados apos buscar da API
+      processData(monthTransactions, chartTransactions)
     } catch (e) {
       error.value = 'Falha ao carregar dados do dashboard.'
       console.error('Erro ao buscar dados do dashboard:', e)
@@ -64,32 +130,10 @@ export const useDashboard = () => {
     }
   }
 
-  const processData = () => {
-    const transactionsList = transactions.value || []
+  const processData = (transactionsList, chartTransactionsList) => {
     const categoriesList = allCategories.value || []
     const goalsList = allGoals.value || []
     const cardsList = allCards.value || []
-
-    // Calculate Total Balance
-    totalBalance.value = transactionsList.reduce((acc, t) => {
-      return acc + (t.type === 'income' ? t.amount : -Math.abs(t.amount))
-    }, 0)
-
-    // Calculate Total Stats
-    const totalIncome = transactionsList
-      .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + Math.abs(t.amount), 0)
-
-    const totalExpenses = transactionsList
-      .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + Math.abs(t.amount), 0)
-
-    stats.value = {
-      income: totalIncome,
-      expenses: totalExpenses,
-      savings: totalIncome - totalExpenses,
-      investments: 0, // Placeholder
-    }
 
     // Recent Transactions
     recentTransactions.value = [...transactionsList]
@@ -125,6 +169,7 @@ export const useDashboard = () => {
     }))
 
     // Spending by Category (apenas despesas)
+    const totalExpenses = stats.value.expenses || 0
     const expenseByCategory = categoriesList
       .filter(c => c.type === 'expense')
       .map(category => {
@@ -157,24 +202,24 @@ export const useDashboard = () => {
       color: c.color ? `linear-gradient(135deg, ${c.color}, ${adjustColor(c.color, -40)})` : 'linear-gradient(135deg, #6366f1, #4f46e5)'
     }))
 
-    // Chart Data (últimos 12 meses)
+    // Chart Data (ultimos 12 meses)
     const labels = []
     const incomeData = []
     const expenseData = []
-    const now = new Date()
+    const chartNow = new Date(selectedYear.value, selectedMonth.value - 1, 1)
     
     for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const d = new Date(chartNow.getFullYear(), chartNow.getMonth() - i, 1)
       labels.push(d.toLocaleDateString('pt-BR', { month: 'short' }))
       
-      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0)
+      const monthStart = new Date(chartNow.getFullYear(), chartNow.getMonth() - i, 1)
+      const monthEnd = new Date(chartNow.getFullYear(), chartNow.getMonth() - i + 1, 0)
 
-      const periodIncomes = transactionsList
+      const periodIncomes = (chartTransactionsList || [])
         .filter(t => t.type === 'income' && new Date(t.date) >= monthStart && new Date(t.date) <= monthEnd)
         .reduce((sum, t) => sum + Math.abs(t.amount), 0)
       
-      const periodExpenses = transactionsList
+      const periodExpenses = (chartTransactionsList || [])
         .filter(t => t.type === 'expense' && new Date(t.date) >= monthStart && new Date(t.date) <= monthEnd)
         .reduce((sum, t) => sum + Math.abs(t.amount), 0)
       
@@ -189,6 +234,26 @@ export const useDashboard = () => {
   
   onMounted(fetchData)
 
+  const goToPreviousMonth = () => {
+    if (selectedMonth.value === 1) {
+      selectedMonth.value = 12
+      selectedYear.value -= 1
+    } else {
+      selectedMonth.value -= 1
+    }
+    fetchData()
+  }
+
+  const goToNextMonth = () => {
+    if (selectedMonth.value === 12) {
+      selectedMonth.value = 1
+      selectedYear.value += 1
+    } else {
+      selectedMonth.value += 1
+    }
+    fetchData()
+  }
+
   return {
     loading,
     error,
@@ -200,6 +265,10 @@ export const useDashboard = () => {
     creditCards,
     chartData,
     fetchData,
+    goToPreviousMonth,
+    goToNextMonth,
+    currentMonthName,
+    currentYear
   }
 }
 

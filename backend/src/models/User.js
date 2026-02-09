@@ -62,8 +62,7 @@ const userSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Index para otimizar buscas por email
-userSchema.index({ email: 1 });
+// Index já criado automaticamente pelo unique: true no campo email
 
 // Virtual para contar transações do usuário
 userSchema.virtual('transactionCount', {

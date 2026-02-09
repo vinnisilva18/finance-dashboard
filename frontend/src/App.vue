@@ -202,23 +202,8 @@ const toggleSidebarMobile = () => {
   uiStore.toggleSidebarMobile()
 }
 
-const logout = async () => {
-  console.log('Iniciando logout...')
-  
-  // 1. Resetar estado da UI primeiro
-  resetAppState()
-  
-  // 2. Fazer logout na store
+const logout = () => {
   authStore.logout()
-  
-  // 3. Forçar re-renderização completa
-  appKey.value++
-  
-  // 4. Aguardar próximo ciclo
-  await nextTick()
-  
-  // 5. Navegar para login
-  console.log('Navegando para login...')
   router.push('/login')
 }
 

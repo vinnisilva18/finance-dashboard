@@ -98,6 +98,12 @@
             </label>
           </div>
 
+
+          <!-- General Error Message -->
+          <div v-if="errors.general" class="error-message general-error">
+            {{ errors.general }}
+          </div>
+
           <!-- Submit Button -->
           <button type="submit" class="submit-btn" :disabled="loading">
             <span v-if="loading" class="btn-spinner"></span>
@@ -153,6 +159,10 @@
         </div>
 
         <form @submit.prevent="handleRegister" class="login-form">
+          <!-- General Error Message for Register -->
+          <div v-if="errors.registerError" class="error-message general-error">
+            {{ errors.registerError }}
+          </div>
           <div class="form-group">
             <label>Nome Completo</label>
             <div class="input-with-icon">
@@ -198,8 +208,8 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const form = reactive({
-  email: 'demo@financontrol.com',
-  password: 'demopass123',
+  email: '',
+  password: '',
   remember: false
 })
 
@@ -269,6 +279,7 @@ const handleLogin = async () => {
 
 const handleRegister = async () => {
   loading.value = true
+  delete errors.registerError // Clear previous error
   try {
     const result = await authStore.register({
       name: registerForm.name,
@@ -280,10 +291,10 @@ const handleRegister = async () => {
       showRegister.value = false
       router.push('/')
     } else {
-      alert(authStore.error || 'Erro ao criar conta')
+      errors.registerError = authStore.error || 'Erro ao criar conta'
     }
   } catch (error) {
-    alert('Erro ao realizar cadastro: ' + (error.message || 'Tente novamente'))
+    errors.registerError = 'Erro ao realizar cadastro: ' + (error.message || 'Tente novamente')
   } finally {
     loading.value = false
   }
@@ -558,6 +569,16 @@ const handleRegister = async () => {
 .error-message {
   font-size: 0.875rem;
   color: var(--danger-400);
+}
+
+.general-error {
+  text-align: center;
+  margin-bottom: 1rem;
+  color: var(--danger-400);
+  background: rgba(239, 68, 68, 0.1);
+  padding: 0.75rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--danger-500);
 }
 
 .password-header {

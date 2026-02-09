@@ -1,20 +1,16 @@
 <template>
   <div class="dashboard">
-    <!-- Welcome & Stats -->
+    <!-- Welcome -->
     <div class="welcome-section">
       <div class="welcome-content">
         <h1 class="welcome-title">
           Olá, <span class="text-gradient">{{ authStore.userName }}</span>! 👋
         </h1>
         <p class="welcome-subtitle">Acompanhe suas finanças em tempo real</p>
-        <div class="date-info">
-          <span class="date-icon">📅</span>
-          <span>{{ currentDate }}</span>
-        </div>
       </div>
       <div class="welcome-stats">
         <div class="stat-badge" v-if="!loading">
-          <span class="stat-label">Saldo Total</span>
+          <span class="stat-label">Saldo do Mês</span>
           <span class="stat-value">{{ formatCurrency(totalBalance, 'BRL') }}</span>
         </div>
       </div>
@@ -40,17 +36,24 @@
       </router-link>
     </div>
 
+    <!-- Month Navigator -->
+    <div class="month-navigator">
+      <button @click="goToPreviousMonth" class="nav-button">‹</button>
+      <h2 class="month-title">{{ currentMonthName }} de {{ currentYear }}</h2>
+      <button @click="goToNextMonth" class="nav-button">›</button>
+    </div>
+
     <!-- Main Stats Grid -->
     <div class="stats-grid">
       <StatsCard 
-        title="Receita Total" 
+        title="Receita do Mês" 
         :amount="stats.income" 
         icon="💰"
         trend-type="positive"
       />
       
       <StatsCard 
-        title="Despesas Totais" 
+        title="Despesas do Mês" 
         :amount="stats.expenses" 
         icon="💸"
         trend-type="negative"
@@ -58,7 +61,7 @@
       />
       
       <StatsCard
-        title="Saldo"
+        title="Saldo do Mês"
         :amount="stats.savings"
         icon="🏦"
         trend-type="positive"
@@ -79,7 +82,7 @@
       <!-- Income vs Expenses Chart -->
       <div class="chart-section card">
         <div class="section-header">
-          <h3>Receitas vs Despesas (Últimos 12 Meses)</h3>
+          <h3>Receitas vs Despesas</h3>
         </div>
         <div class="chart-container">
           <canvas ref="chartCanvas"></canvas>
@@ -89,14 +92,14 @@
       <!-- Recent Transactions -->
       <div class="transactions-section card">
         <div class="section-header">
-          <h3>Transações Recentes</h3>
+          <h3>Transações Recentes no Mês</h3>
           <router-link to="/transactions" class="view-all">
             Ver todas <span class="arrow">→</span>
           </router-link>
         </div>
         <div class="transactions-list">
            <div v-if="recentTransactions.length === 0" class="empty-data">
-              Nenhuma transação recente.
+              Nenhuma transação neste mês.
           </div>
           <div v-for="transaction in recentTransactions" :key="transaction.id" 
                class="transaction-item">
@@ -239,24 +242,20 @@ const {
   categories,
   creditCards,
   chartData,
-  fetchData
+  goToPreviousMonth,
+  goToNextMonth,
+  currentMonthName,
+  currentYear,
 } = useDashboard()
 
 const chartCanvas = ref(null)
 let chartInstance = null
 
-const currentDate = new Date().toLocaleDateString('pt-BR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-})
-
 const renderChart = () => {
   if (chartInstance) {
     chartInstance.destroy()
   }
-  if (chartCanvas.value) {
+  if (chartCanvas.value && chartData.value) {
     const ctx = chartCanvas.value.getContext('2d')
     chartInstance = new Chart(ctx, {
       type: 'bar',
@@ -268,6 +267,22 @@ const renderChart = () => {
           y: {
             beginAtZero: true
           }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                if (context.parsed.y !== null) {
+                  label += formatCurrency(context.parsed.y, 'BRL');
+                }
+                return label;
+              }
+            }
+          }
         }
       }
     })
@@ -276,7 +291,7 @@ const renderChart = () => {
 
 onMounted(() => {
   authStore.fetchUser()
-  renderChart()
+  // The chart will be rendered by the watch effect once data is loaded
 })
 
 watch(chartData, () => {
@@ -320,18 +335,6 @@ watch(chartData, () => {
   color: #6b7280;
   margin-bottom: 1rem;
   max-width: 600px;
-}
-
-.date-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #9ca3af;
-  font-size: 0.875rem;
-}
-
-.date-icon {
-  font-size: 1rem;
 }
 
 .welcome-stats {
@@ -422,6 +425,45 @@ watch(chartData, () => {
   font-weight: 500;
   color: #4b5563;
   font-size: 1rem;
+}
+
+/* Month Navigator */
+.month-navigator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.month-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #374151;
+  text-transform: capitalize;
+  min-width: 250px;
+  text-align: center;
+}
+
+.nav-button {
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-button:hover {
+  background: #f9fafb;
+  border-color: #6366f1;
+  color: #6366f1;
 }
 
 /* Stats Grid */

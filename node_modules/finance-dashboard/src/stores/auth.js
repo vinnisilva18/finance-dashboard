@@ -44,56 +44,6 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
       
       try {
-        // Check for demo login
-        if (credentials.email === 'demo@financontrol.com' && credentials.password === 'demopass123') {
-          // Mock demo login
-          await new Promise(resolve => setTimeout(resolve, 500))
-
-          const mockUser = {
-            id: 1,
-            name: 'Demo User',
-            email: 'demo@financontrol.com'
-          }
-
-          const mockToken = 'mock-demo-jwt-token-' + Date.now()
-
-          this.token = mockToken
-          this.user = mockUser
-
-          if (isBrowser) {
-            localStorage.setItem('token', mockToken)
-            localStorage.setItem('user', JSON.stringify(mockUser))
-          }
-
-          apiService.defaults.headers.common['Authorization'] = `Bearer ${mockToken}`
-          return { success: true, data: { token: mockToken, user: mockUser } }
-        }
-
-        // Check for mock admin login
-        if (credentials.email === 'admin@admin.com' && credentials.password === '123') {
-          // Mock admin login
-          await new Promise(resolve => setTimeout(resolve, 500))
-
-          const mockUser = {
-            id: 1,
-            name: 'Admin User',
-            email: 'admin@admin.com'
-          }
-
-          const mockToken = 'mock-admin-jwt-token-' + Date.now()
-
-          this.token = mockToken
-          this.user = mockUser
-
-          if (isBrowser) {
-            localStorage.setItem('token', mockToken)
-            localStorage.setItem('user', JSON.stringify(mockUser))
-          }
-
-          apiService.defaults.headers.common['Authorization'] = `Bearer ${mockToken}`
-          return { success: true, data: { token: mockToken, user: mockUser } }
-        }
-
         // API real
         const response = await apiService.post('/auth/login', credentials)
         const { token, user } = response.data
@@ -104,13 +54,12 @@ export const useAuthStore = defineStore('auth', {
 
         this.token = token
         this.user = user
-        
+
         if (isBrowser) {
           localStorage.setItem('token', token)
           localStorage.setItem('user', JSON.stringify(user))
         }
-        
-        apiService.defaults.headers.common['Authorization'] = `Bearer ${token}`
+
         return { success: true, data: response.data }
         
       } catch (error) {
@@ -141,8 +90,7 @@ export const useAuthStore = defineStore('auth', {
           localStorage.setItem('token', token)
           localStorage.setItem('user', JSON.stringify(user))
         }
-        
-        apiService.defaults.headers.common['Authorization'] = `Bearer ${token}`
+
         return { success: true, data: response.data }
         
       } catch (error) {
@@ -180,8 +128,7 @@ export const useAuthStore = defineStore('auth', {
         localStorage.removeItem('user')
         localStorage.removeItem('sidebarCollapsed') // Limpa estado da sidebar
       }
-      
-      delete apiService.defaults.headers.common['Authorization']
+
       // IMPORTANTE: Não usar window.location.href aqui
     },
 

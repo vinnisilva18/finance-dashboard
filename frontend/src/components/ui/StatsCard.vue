@@ -11,7 +11,7 @@
     
     <div class="card-content">
       <h3 class="card-title">{{ title }}</h3>
-      <p class="card-value">R$ {{ formatCurrency(amount) }}</p>
+      <p class="card-value">{{ formatCurrency(amount) }}</p>
     </div>
     
     <div class="card-footer">

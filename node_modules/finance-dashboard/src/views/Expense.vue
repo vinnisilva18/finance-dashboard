@@ -261,6 +261,7 @@ import { useQuasar } from 'quasar'
 import { useTransactionStore } from '@/stores/transaction'
 import { useCategoryStore } from '@/stores/category'
 import { useCategories } from '@/composables/useCategories'
+import { useTransactions } from '@/composables/useTransactions'
 import TransactionForm from '@/components/TransactionForm.vue'
 import { formatCurrency, formatDate } from '@/utils/formatters'
 
@@ -268,6 +269,12 @@ const $q = useQuasar()
 const transactionStore = useTransactionStore()
 const categoryStore = useCategoryStore()
 const { fetchCategories } = useCategories()
+const { 
+  addTransaction: apiAddTransaction, 
+  updateTransaction: apiUpdateTransaction, 
+  deleteTransaction: apiDeleteTransaction, 
+  fetchTransactions 
+} = useTransactions()
 
 // Reactive data
 const searchQuery = ref('')
@@ -395,13 +402,13 @@ const closeTransactionForm = () => {
 const handleTransactionSubmit = async (transactionData) => {
   try {
     if (editingTransaction.value) {
-      await transactionStore.updateTransaction(editingTransaction.value._id || editingTransaction.value.id, transactionData)
+      await apiUpdateTransaction(editingTransaction.value._id || editingTransaction.value.id, transactionData)
       $q.notify({
         type: 'positive',
         message: 'Despesa atualizada com sucesso'
       })
     } else {
-      await transactionStore.addTransaction({ ...transactionData, type: 'expense' })
+      await apiAddTransaction({ ...transactionData, type: 'expense' })
       $q.notify({
         type: 'positive',
         message: 'Despesa adicionada com sucesso'
@@ -431,7 +438,7 @@ const deleteTransaction = (transactionId) => {
 const confirmDelete = async () => {
   deleting.value = true
   try {
-    await transactionStore.deleteTransaction(transactionToDelete.value)
+    await apiDeleteTransaction(transactionToDelete.value)
     $q.notify({
       type: 'positive',
       message: 'Despesa excluída com sucesso'
@@ -451,7 +458,7 @@ const confirmDelete = async () => {
 // Lifecycle
 onMounted(async () => {
   await Promise.all([
-    transactionStore.fetchTransactions(),
+    fetchTransactions(),
     fetchCategories()
   ])
 })
