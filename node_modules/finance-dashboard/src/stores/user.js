@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
+import apiService from '../services/apiService'
 
 export const useUserStore = defineStore('user', () => {
   const user = ref(null)
@@ -10,19 +10,12 @@ export const useUserStore = defineStore('user', () => {
 
   const isAuthenticated = computed(() => !!token.value)
 
-  const api = axios.create({
-    baseURL: '/api',
-    headers: {
-      'Authorization': token.value ? `Bearer ${token.value}` : ''
-    }
-  })
-
   async function login(credentials) {
     loading.value = true
     error.value = null
     
     try {
-      const response = await axios.post('/api/auth/login', credentials)
+      const response = await apiService.post('/auth/login', credentials)
       token.value = response.data.token
       user.value = response.data.user
       localStorage.setItem('token', token.value)
@@ -40,7 +33,7 @@ export const useUserStore = defineStore('user', () => {
     error.value = null
     
     try {
-      const response = await axios.post('/api/auth/register', userData)
+      const response = await apiService.post('/auth/register', userData)
       return response.data
     } catch (err) {
       error.value = err.response?.data?.message || 'Erro ao registrar'
@@ -52,7 +45,7 @@ export const useUserStore = defineStore('user', () => {
 
   async function logout() {
     try {
-      await api.post('/api/auth/logout')
+      await apiService.post('/auth/logout')
     } finally {
       token.value = null
       user.value = null
@@ -62,7 +55,7 @@ export const useUserStore = defineStore('user', () => {
 
   async function fetchProfile() {
     try {
-      const response = await api.get('/api/auth/profile')
+      const response = await apiService.get('/auth/profile')
       user.value = response.data
     } catch (err) {
       logout()
@@ -74,7 +67,7 @@ export const useUserStore = defineStore('user', () => {
     error.value = null
     
     try {
-      const response = await api.put('/api/auth/profile', profileData)
+      const response = await apiService.put('/auth/profile', profileData)
       user.value = response.data
       return response.data
     } catch (err) {
