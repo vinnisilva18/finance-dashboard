@@ -39,7 +39,7 @@
             <label>Nome da Meta</label>
             <input v-model="formData.name" type="text" required class="form-control" placeholder="Ex.: Reserva de Emergência">
           </div>
-          
+
           <div class="form-group">
             <label>Categoria</label>
             <select v-model="formData.category" class="form-control" required>
@@ -59,7 +59,7 @@
             <label>Valor da Meta</label>
             <input v-model="formData.targetAmount" type="number" step="0.01" required class="form-control" placeholder="10000">
           </div>
-          
+
           <div class="form-group">
             <label>Valor Atual</label>
             <input v-model="formData.currentAmount" type="number" step="0.01" required class="form-control" placeholder="0">
@@ -71,13 +71,24 @@
             <label>Prazo</label>
             <input v-model="formData.deadline" type="date" required class="form-control">
           </div>
-          
+
           <div class="form-group">
             <label>Prioridade</label>
             <select v-model="formData.priority" class="form-control" required>
               <option value="high">Alta</option>
               <option value="medium">Média</option>
               <option value="low">Baixa</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Moeda</label>
+            <select v-model="formData.currency" class="form-control" required>
+              <option v-for="currency in currencies" :key="currency._id" :value="currency._id">
+                {{ currency.name }} ({{ currency.symbol }})
+              </option>
             </select>
           </div>
         </div>
@@ -142,7 +153,7 @@
             </button>
           </div>
         </div>
-        
+
         <div class="goal-progress">
           <div class="progress-info">
             <span class="progress-text">
@@ -157,7 +168,7 @@
             }"></div>
           </div>
         </div>
-        
+
         <div class="goal-details">
           <div class="detail-row">
             <span class="label">Prazo:</span>
@@ -176,7 +187,7 @@
             <span class="value">{{ formatCurrency(calculateDailyRequired(goal)) }}/dia</span>
           </div>
         </div>
-        
+
         <div v-if="goal.description" class="goal-description">
           {{ goal.description }}
         </div>
@@ -198,7 +209,7 @@
             </button>
           </div>
         </div>
-        
+
         <div class="completion-info">
           <div class="info-item">
             <span class="label">Concluída em:</span>
@@ -246,16 +257,19 @@
 import { ref, onMounted, reactive } from 'vue'
 import { useGoals } from '../composables/useGoals'
 import { formatCurrency, formatDate } from '../utils/formatters'
+import { useCurrencies } from '../composables/useCurrencies'
 
-const { 
-  goals, 
-  activeGoals, 
-  completedGoals, 
-  loading, 
-  error, 
-  fetchGoals, 
-  addGoal, 
-  updateGoal, 
+const { currencies, fetchCurrencies } = useCurrencies()
+
+const {
+  goals,
+  activeGoals,
+  completedGoals,
+  loading,
+  error,
+  fetchGoals,
+  addGoal,
+  updateGoal,
   deleteGoal,
   addContribution: addContributionToGoal,
   totalTargetAmount,
@@ -278,11 +292,13 @@ const formData = reactive({
   category: 'savings',
   color: '#4CAF50',
   priority: 'medium',
+  currency: '507f1f77bcf86cd799439013', // BRL _id
   description: ''
 })
 
-onMounted(() => {
-  fetchGoals()
+onMounted(async () => {
+  await fetchCurrencies()
+  await fetchGoals()
 })
 
 const handleSubmit = async () => {
@@ -292,7 +308,7 @@ const handleSubmit = async () => {
   } else {
     await addGoal(formData)
   }
-  
+
   resetForm()
   showForm.value = false
 }
@@ -306,6 +322,7 @@ const editGoal = (goal) => {
   formData.category = goal.category
   formData.color = goal.color
   formData.priority = goal.priority
+  formData.currency = goal.currency
   formData.description = goal.description || ''
   showForm.value = true
 }
@@ -324,10 +341,9 @@ const resetForm = () => {
   formData.category = 'savings'
   formData.color = '#4CAF50'
   formData.priority = 'medium'
+  formData.currency = '507f1f77bcf86cd799439013' // BRL _id
   formData.description = ''
 }
-
-
 
 const calculateDaysRemaining = (deadline) => {
   const today = new Date()
@@ -339,7 +355,7 @@ const calculateDaysRemaining = (deadline) => {
 const calculateDailyRequired = (goal) => {
   const daysRemaining = calculateDaysRemaining(goal.deadline)
   if (daysRemaining <= 0) return 0
-  
+
   const remainingAmount = goal.targetAmount - goal.currentAmount
   return Math.max(0, remainingAmount / daysRemaining)
 }
@@ -352,10 +368,10 @@ const addContribution = (goal) => {
 
 const submitContribution = async () => {
   if (!selectedGoal.value || !contributionAmount.value) return
-  
+
   const amount = parseFloat(contributionAmount.value)
   if (amount <= 0) return
-  
+
   try {
     await addContributionToGoal(selectedGoal.value.id, amount)
     closeContributionModal()
@@ -746,6 +762,3 @@ const closeContributionModal = () => {
   margin: 20px 0;
 }
 </style>
-
-
-

@@ -33,6 +33,11 @@ const goalSchema = new mongoose.Schema({
     enum: ['active', 'completed', 'cancelled'],
     default: 'active'
   },
+  currency: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Currency',
+    required: true
+  },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

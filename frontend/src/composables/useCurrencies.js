@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { useCurrencyStore } from '../stores/currency'
 import { localStorageService } from '../services/localStorageService'
+import apiService from '../services/apiService'
 
 const CURRENCIES_STORAGE_KEY = 'currencies'
 const BASE_CURRENCY_STORAGE_KEY = 'base_currency'
@@ -24,12 +25,8 @@ export const useCurrencies = () => {
   const fetchCurrencies = async () => {
     error.value = null
     try {
-      let currencies = localStorageService.getData(CURRENCIES_STORAGE_KEY)
-      if (!currencies) {
-        currencies = defaultCurrencies
-        localStorageService.saveData(CURRENCIES_STORAGE_KEY, currencies)
-      }
-      currencyStore.setCurrencies(currencies)
+      const response = await apiService.get('/currencies')
+      currencyStore.setCurrencies(response.data)
 
       let baseCurrency = localStorageService.getData(BASE_CURRENCY_STORAGE_KEY)
       if (!baseCurrency) {
@@ -40,6 +37,13 @@ export const useCurrencies = () => {
 
     } catch (err) {
       error.value = 'Failed to fetch currencies'
+      // Fallback to localStorage if API fails
+      let currencies = localStorageService.getData(CURRENCIES_STORAGE_KEY)
+      if (!currencies) {
+        currencies = defaultCurrencies
+        localStorageService.saveData(CURRENCIES_STORAGE_KEY, currencies)
+      }
+      currencyStore.setCurrencies(currencies)
     }
   }
 

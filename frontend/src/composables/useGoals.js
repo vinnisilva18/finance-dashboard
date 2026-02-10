@@ -1,24 +1,28 @@
 import { ref, computed } from 'vue'
 import { useGoalStore } from '../stores/goal'
 import { localStorageService } from '../services/localStorageService'
+import apiService from '../services/apiService'
 
 const GOALS_STORAGE_KEY = 'goals'
 
 export const useGoals = () => {
   const goalStore = useGoalStore()
-  
+
   const loading = ref(false)
   const error = ref(null)
 
   const fetchGoals = async () => {
     loading.value = true
     error.value = null
-    
+
     try {
-      const goals = localStorageService.getData(GOALS_STORAGE_KEY) || []
-      goalStore.setGoals(goals)
+      const response = await apiService.get('/goals')
+      goalStore.setGoals(response.data)
     } catch (err) {
       error.value = 'Failed to fetch goals'
+      // Fallback to localStorage if API fails
+      const goals = localStorageService.getData(GOALS_STORAGE_KEY) || []
+      goalStore.setGoals(goals)
     } finally {
       loading.value = false
     }
@@ -27,15 +31,8 @@ export const useGoals = () => {
   const addGoal = async (goal) => {
     loading.value = true
     try {
-      const newGoal = {
-        ...goal,
-        id: Date.now(),
-        currentAmount: 0
-      }
-      const goals = localStorageService.getData(GOALS_STORAGE_KEY) || []
-      const updatedGoals = [...goals, newGoal]
-      localStorageService.saveData(GOALS_STORAGE_KEY, updatedGoals)
-      goalStore.addGoal(newGoal)
+      const response = await apiService.post('/goals', goal)
+      goalStore.addGoal(response.data)
     } catch (err) {
       error.value = 'Failed to add goal'
       throw err
@@ -47,13 +44,8 @@ export const useGoals = () => {
   const updateGoal = async (id, updates) => {
     loading.value = true
     try {
-      let goals = localStorageService.getData(GOALS_STORAGE_KEY) || []
-      const index = goals.findIndex(g => g.id === id)
-      if (index !== -1) {
-        goals[index] = { ...goals[index], ...updates }
-        localStorageService.saveData(GOALS_STORAGE_KEY, goals)
-        goalStore.updateGoal(id, updates)
-      }
+      const response = await apiService.put(`/goals/${id}`, updates)
+      goalStore.updateGoal(id, response.data)
     } catch (err) {
       error.value = 'Failed to update goal'
       throw err
@@ -65,9 +57,7 @@ export const useGoals = () => {
   const deleteGoal = async (id) => {
     loading.value = true
     try {
-      let goals = localStorageService.getData(GOALS_STORAGE_KEY) || []
-      const updatedGoals = goals.filter(g => g.id !== id)
-      localStorageService.saveData(GOALS_STORAGE_KEY, updatedGoals)
+      await apiService.delete(`/goals/${id}`)
       goalStore.deleteGoal(id)
     } catch (err) {
       error.value = 'Failed to delete goal'

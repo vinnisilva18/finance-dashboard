@@ -21,13 +21,13 @@ const auth = (req, res, next) => {
 
 // Mock currency data - In a real app, this would come from an external API
 const currencies = [
-  { code: 'USD', name: 'US Dollar', symbol: '$', rate: 1.0 },
-  { code: 'EUR', name: 'Euro', symbol: '€', rate: 0.85 },
-  { code: 'BRL', name: 'Brazilian Real', symbol: 'R$', rate: 5.2 },
-  { code: 'GBP', name: 'British Pound', symbol: '£', rate: 0.73 },
-  { code: 'JPY', name: 'Japanese Yen', symbol: '¥', rate: 110.0 },
-  { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$', rate: 1.25 },
-  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', rate: 1.35 }
+  { _id: '507f1f77bcf86cd799439011', code: 'USD', name: 'US Dollar', symbol: '$', rate: 1.0 },
+  { _id: '507f1f77bcf86cd799439012', code: 'EUR', name: 'Euro', symbol: '€', rate: 0.85 },
+  { _id: '507f1f77bcf86cd799439013', code: 'BRL', name: 'Brazilian Real', symbol: 'R$', rate: 5.2 },
+  { _id: '507f1f77bcf86cd799439014', code: 'GBP', name: 'British Pound', symbol: '£', rate: 0.73 },
+  { _id: '507f1f77bcf86cd799439015', code: 'JPY', name: 'Japanese Yen', symbol: '¥', rate: 110.0 },
+  { _id: '507f1f77bcf86cd799439016', code: 'CAD', name: 'Canadian Dollar', symbol: 'C$', rate: 1.25 },
+  { _id: '507f1f77bcf86cd799439017', code: 'AUD', name: 'Australian Dollar', symbol: 'A$', rate: 1.35 }
 ];
 
 // Get all currencies

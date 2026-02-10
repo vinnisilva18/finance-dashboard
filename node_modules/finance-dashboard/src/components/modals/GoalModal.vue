@@ -145,6 +145,26 @@
             </q-select>
           </div>
 
+          <!-- Moeda -->
+          <div class="form-section">
+            <div class="section-title">Moeda *</div>
+            <q-select
+              v-model="goalForm.currency"
+              :options="currencyOptions"
+              filled
+              :rules="[val => !!val || 'Moeda é obrigatória']"
+              label="Selecione uma moeda"
+            >
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section>
+                    <q-item-label>{{ scope.opt.label }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+            </q-select>
+          </div>
+
           <!-- Marco de Saldo Mensal -->
           <div class="form-section">
             <div class="section-title">
@@ -374,10 +394,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useCategoryStore } from '@/stores/category'
+import { useCurrencies } from '@/composables/useCurrencies'
 import { formatCurrency, formatDate } from '@/utils/formatters'
 
 const $q = useQuasar()
 const categoryStore = useCategoryStore()
+const { currencies, fetchCurrencies } = useCurrencies()
 
 const props = defineProps({
   modelValue: Boolean,
@@ -412,6 +434,7 @@ const goalForm = ref({
   target: 0,
   current: 0,
   priority: 'medium',
+  currency: '507f1f77bcf86cd799439013', // Default to BRL
   category: '',
   hasMonthlyTarget: false,
   monthlyTarget: 0,
@@ -466,10 +489,18 @@ const categoryOptions = computed(() => {
   }))
 })
 
+const currencyOptions = computed(() => {
+  return currencies.value.map(currency => ({
+    label: `${currency.name} (${currency.symbol})`,
+    value: currency._id
+  }))
+})
+
 onMounted(async () => {
   await categoryStore.fetchCategories()
   allCategories.value = categoryStore.categories
   filteredCategories.value = allCategories.value
+  await fetchCurrencies()
 })
 
 // Computed Properties
@@ -598,10 +629,11 @@ async function submitForm() {
       target: parseFloat(goalForm.value.target),
       current: parseFloat(goalForm.value.current || 0),
       priority: goalForm.value.priority,
+      currency: goalForm.value.currency,
       category: goalForm.value.category || null,
       monthlyTarget: goalForm.value.hasMonthlyTarget ? parseFloat(goalForm.value.monthlyTarget) : null,
       depositDay: goalForm.value.hasMonthlyTarget ? parseInt(goalForm.value.depositDay) : null,
-      milestones: goalForm.value.hasMilestones ? 
+      milestones: goalForm.value.hasMilestones ?
         goalForm.value.milestones
           .filter(m => m.title.trim() && m.amount > 0)
           .map(m => ({

@@ -650,9 +650,11 @@ import GoalModal from '@/components/modals/GoalModal.vue'
 import ProgressModal from '@/components/modals/ProgressModal.vue'
 import DeadlineModal from '@/components/modals/DeadlineModal.vue'
 import { formatCurrency, formatDate, getDaysBetween } from '@/utils/formatters'
+import { useCurrencies } from '@/composables/useCurrencies'
 
 const $q = useQuasar()
 const goalStore = useGoalStore()
+const { currencies } = useCurrencies()
 
 const activeTab = ref('active')
 const showFilters = ref(false)

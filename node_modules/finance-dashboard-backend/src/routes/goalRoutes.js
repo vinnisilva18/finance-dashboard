@@ -60,7 +60,7 @@ router.get('/:id', auth, async (req, res) => {
 // Create goal
 router.post('/', auth, async (req, res) => {
   try {
-    const { title, description, targetAmount, currentAmount, deadline, priority } = req.body;
+    const { title, description, targetAmount, currentAmount, deadline, priority, currency, category } = req.body;
 
     const goal = new Goal({
       title,
@@ -69,6 +69,8 @@ router.post('/', auth, async (req, res) => {
       currentAmount: currentAmount || 0,
       deadline,
       priority: priority || 'medium',
+      currency,
+      category,
       userId: req.userId
     });
 
@@ -83,11 +85,11 @@ router.post('/', auth, async (req, res) => {
 // Update goal
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { title, description, targetAmount, currentAmount, deadline, priority, status } = req.body;
+    const { title, description, targetAmount, currentAmount, deadline, priority, status, currency, category } = req.body;
 
     const goal = await Goal.findOneAndUpdate(
       { _id: req.params.id, userId: req.userId },
-      { title, description, targetAmount, currentAmount, deadline, priority, status },
+      { title, description, targetAmount, currentAmount, deadline, priority, status, currency, category },
       { new: true }
     );
 
