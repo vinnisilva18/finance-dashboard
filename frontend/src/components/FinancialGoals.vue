@@ -165,9 +165,9 @@
           <!-- Metas Ativas -->
           <q-tab-panel name="active">
             <div class="goals-grid">
-              <div 
-                v-for="goal in filteredActiveGoals" 
-                :key="goal.id"
+              <div
+                v-for="goal in filteredActiveGoals"
+                :key="goal._id"
                 class="goal-card"
                 :class="{
                   'priority-high': goal.priority === 'high',
@@ -224,14 +224,14 @@
                             </q-item-section>
                             <q-item-section>Adicionar Progresso</q-item-section>
                           </q-item>
-                          <q-item clickable @click="archiveGoal(goal.id)">
+                          <q-item clickable @click="archiveGoal(goal._id)">
                             <q-item-section avatar>
                               <q-icon name="archive" />
                             </q-item-section>
                             <q-item-section>Arquivar</q-item-section>
                           </q-item>
                           <q-separator />
-                          <q-item clickable @click="deleteGoal(goal.id)" class="text-negative">
+                          <q-item clickable @click="deleteGoal(goal._id)" class="text-negative">
                             <q-item-section avatar>
                               <q-icon name="delete" />
                             </q-item-section>
@@ -306,7 +306,7 @@
                         <div class="milestone-checkbox">
                           <q-checkbox 
                             v-model="milestone.completed"
-                            @update:model-value="toggleMilestone(goal.id, milestone.id)"
+                            @update:model-value="toggleMilestone(goal._id, milestone.id)"
                           />
                         </div>
                         <div class="milestone-content">
@@ -363,9 +363,9 @@
           <!-- Metas Concluídas -->
           <q-tab-panel name="completed">
             <div class="goals-grid">
-              <div 
-                v-for="goal in completedGoals" 
-                :key="goal.id"
+              <div
+                v-for="goal in completedGoals"
+                :key="goal._id"
                 class="goal-card completed"
               >
                 <div class="goal-header">
@@ -384,7 +384,7 @@
                     >
                       <q-menu>
                         <q-list>
-                          <q-item clickable @click="reactivateGoal(goal.id)">
+                          <q-item clickable @click="reactivateGoal(goal._id)">
                             <q-item-section avatar>
                               <q-icon name="refresh" />
                             </q-item-section>
@@ -397,7 +397,7 @@
                             <q-item-section>Duplicar</q-item-section>
                           </q-item>
                           <q-separator />
-                          <q-item clickable @click="deleteGoal(goal.id)" class="text-negative">
+                          <q-item clickable @click="deleteGoal(goal._id)" class="text-negative">
                             <q-item-section avatar>
                               <q-icon name="delete" />
                             </q-item-section>
@@ -462,9 +462,9 @@
           <!-- Metas Atrasadas -->
           <q-tab-panel name="overdue">
             <div class="goals-grid">
-              <div 
-                v-for="goal in overdueGoals" 
-                :key="goal.id"
+              <div
+                v-for="goal in overdueGoals"
+                :key="goal._id"
                 class="goal-card overdue"
               >
                 <div class="goal-header">
@@ -545,9 +545,9 @@
           <!-- Metas Arquivadas -->
           <q-tab-panel name="archived">
             <div class="goals-grid">
-              <div 
-                v-for="goal in archivedGoals" 
-                :key="goal.id"
+              <div
+                v-for="goal in archivedGoals"
+                :key="goal._id"
                 class="goal-card archived"
               >
                 <div class="goal-header">
@@ -566,13 +566,13 @@
                     >
                       <q-menu>
                         <q-list>
-                          <q-item clickable @click="reactivateGoal(goal.id)">
+                          <q-item clickable @click="reactivateGoal(goal._id)">
                             <q-item-section avatar>
                               <q-icon name="refresh" />
                             </q-item-section>
                             <q-item-section>Restaurar</q-item-section>
                           </q-item>
-                          <q-item clickable @click="deleteGoal(goal.id)" class="text-negative">
+                          <q-item clickable @click="deleteGoal(goal._id)" class="text-negative">
                             <q-item-section avatar>
                               <q-icon name="delete" />
                             </q-item-section>
@@ -953,7 +953,7 @@ function toggleMilestone(goalId, milestoneId) {
 async function handleGoalSubmit(goalData) {
   try {
     if (editingGoal.value) {
-      await goalStore.updateGoal({ id: editingGoal.value.id, ...goalData })
+      await goalStore.updateGoal({ id: editingGoal.value._id, ...goalData })
       $q.notify({
         type: 'positive',
         message: 'Meta atualizada com sucesso'
@@ -965,7 +965,7 @@ async function handleGoalSubmit(goalData) {
         message: 'Meta criada com sucesso'
       })
     }
-    
+
     showAddModal.value = false
     resetModal()
   } catch (error) {
@@ -978,7 +978,7 @@ async function handleGoalSubmit(goalData) {
 
 async function handleProgressSubmit(progressData) {
   try {
-    await goalStore.addProgress(selectedGoal.value.id, progressData.amount)
+    await goalStore.addProgress(selectedGoal.value._id, progressData.amount)
     $q.notify({
       type: 'positive',
       message: 'Progresso adicionado com sucesso'
@@ -996,7 +996,7 @@ async function handleProgressSubmit(progressData) {
 async function handleDeadlineSubmit(newDeadline) {
   try {
     await goalStore.updateGoal({
-      id: selectedGoal.value.id,
+      id: selectedGoal.value._id,
       deadline: newDeadline
     })
     $q.notify({

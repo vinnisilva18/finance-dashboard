@@ -131,12 +131,12 @@
     </div>
 
     <div v-if="activeTab === 'active'" class="goals-grid">
-      <div v-for="goal in activeGoals" :key="goal.id" class="goal-item card">
+      <div v-for="goal in activeGoals" :key="goal._id" class="goal-item card">
         <div class="goal-header">
           <div class="goal-color" :style="{ backgroundColor: goal.color }"></div>
           <div class="goal-info">
-            <h3>{{ goal.name }}</h3>
-            <span class="goal-category">{{ goal.category }}</span>
+            <h3>{{ goal.title || goal.name }}</h3>
+            <span class="goal-category">{{ getCategoryLabel(goal.category) }}</span>
             <span class="goal-priority" :class="goal.priority">
               {{ goal.priority }}
             </span>
@@ -145,10 +145,7 @@
             <button @click="editGoal(goal)" class="btn-icon" title="Editar">
               &#x270F;&#xFE0F;
             </button>
-            <button @click="addContribution(goal)" class="btn-icon" title="Adicionar Contribuição">
-              &#x1F4B0;
-            </button>
-            <button @click="deleteGoal(goal.id)" class="btn-icon" title="Excluir">
+            <button @click="deleteGoal(goal._id)" class="btn-icon" title="Excluir">
               &#x1F5D1;&#xFE0F;
             </button>
           </div>
@@ -176,15 +173,19 @@
           </div>
           <div class="detail-row">
             <span class="label">Dias Restantes:</span>
-            <span class="value">{{ calculateDaysRemaining(goal.deadline) }} dias</span>
+            <span class="value">{{ getDaysRemaining(goal) }} dias</span>
           </div>
           <div class="detail-row">
             <span class="label">Faltam:</span>
-            <span class="value">{{ formatCurrency(goal.targetAmount - goal.currentAmount) }}</span>
+            <span class="value">{{ formatCurrency(getAmountNeeded(goal)) }}</span>
           </div>
           <div class="detail-row">
             <span class="label">Necessário por Dia:</span>
-            <span class="value">{{ formatCurrency(calculateDailyRequired(goal)) }}/dia</span>
+            <span class="value">{{ formatCurrency(getDailyAmountToSave(goal)) }}/dia</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Necessário por Mês:</span>
+            <span class="value">{{ formatCurrency(getMonthlyAmountToSave(goal)) }}/mês</span>
           </div>
         </div>
 
@@ -195,16 +196,16 @@
     </div>
 
     <div v-if="activeTab === 'completed'" class="completed-goals">
-      <div v-for="goal in completedGoals" :key="goal.id" class="completed-goal card">
+      <div v-for="goal in completedGoals" :key="goal._id" class="completed-goal card">
         <div class="completion-badge">&#x1F389; Concluída!</div>
         <div class="goal-header">
           <div class="goal-color" :style="{ backgroundColor: goal.color }"></div>
           <div class="goal-info">
-            <h3>{{ goal.name }}</h3>
-            <span class="goal-category">{{ goal.category }}</span>
+            <h3>{{ goal.title || goal.name }}</h3>
+            <span class="goal-category">{{ getCategoryLabel(goal.category) }}</span>
           </div>
           <div class="goal-actions">
-            <button @click="deleteGoal(goal.id)" class="btn-icon" title="Excluir">
+            <button @click="deleteGoal(goal._id)" class="btn-icon" title="Excluir">
               &#x1F5D1;&#xFE0F;
             </button>
           </div>
@@ -232,24 +233,6 @@
       </button>
     </div>
 
-    <!-- Modal for adding contribution -->
-    <div v-if="showContributionModal" class="modal-overlay">
-      <div class="modal-content card">
-        <h3>Adicionar Contribuição para {{ selectedGoal?.name }}</h3>
-        <div class="form-group">
-          <label>Valor</label>
-          <input v-model="contributionAmount" type="number" step="0.01" class="form-control" placeholder="100">
-        </div>
-        <div class="modal-actions">
-          <button @click="submitContribution" class="btn btn-primary" :disabled="loading">
-            {{ loading ? 'Adicionando...' : 'Adicionar ContribuiÃ§Ã£o' }}
-          </button>
-          <button @click="closeContributionModal" class="btn btn-secondary">
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -258,8 +241,10 @@ import { ref, onMounted, reactive } from 'vue'
 import { useGoals } from '../composables/useGoals'
 import { formatCurrency, formatDate } from '../utils/formatters'
 import { useCurrencies } from '../composables/useCurrencies'
+import { useCategories } from '../composables/useCategories'
 
 const { currencies, fetchCurrencies } = useCurrencies()
+const { categories, fetchCategories } = useCategories()
 
 const {
   goals,
@@ -271,7 +256,6 @@ const {
   addGoal,
   updateGoal,
   deleteGoal,
-  addContribution: addContributionToGoal,
   totalTargetAmount,
   totalCurrentAmount,
   totalProgress
@@ -280,9 +264,6 @@ const {
 const showForm = ref(false)
 const editingGoal = ref(null)
 const activeTab = ref('active')
-const showContributionModal = ref(false)
-const selectedGoal = ref(null)
-const contributionAmount = ref('')
 
 const formData = reactive({
   name: '',
@@ -298,12 +279,37 @@ const formData = reactive({
 
 onMounted(async () => {
   await fetchCurrencies()
+  await fetchCategories()
   await fetchGoals()
 })
 
+const categoryLabelMap = {
+  savings: 'Poupança',
+  vehicle: 'Veículo',
+  travel: 'Viagem',
+  home: 'Casa',
+  education: 'Educação',
+  investment: 'Investimento',
+  other: 'Outro'
+}
+
+const getCategoryLabel = (category) => {
+  if (!category) return 'Sem categoria'
+
+  if (typeof category === 'object') {
+    return category.name || category.title || category.id || category._id || 'Sem categoria'
+  }
+
+  const mapped = categoryLabelMap[category]
+  if (mapped) return mapped
+
+  const found = (categories.value || []).find(c => c._id === category || c.id === category)
+  return found?.name || category
+}
+
 const handleSubmit = async () => {
   if (editingGoal.value) {
-    await updateGoal(editingGoal.value.id, formData)
+    await updateGoal(editingGoal.value._id, formData)
     editingGoal.value = null
   } else {
     await addGoal(formData)
@@ -315,10 +321,10 @@ const handleSubmit = async () => {
 
 const editGoal = (goal) => {
   editingGoal.value = goal
-  formData.name = goal.name
+  formData.name = goal.title || goal.name || ''
   formData.targetAmount = goal.targetAmount
   formData.currentAmount = goal.currentAmount
-  formData.deadline = goal.deadline
+  formData.deadline = goal.deadline ? new Date(goal.deadline).toISOString().split('T')[0] : ''
   formData.category = goal.category
   formData.color = goal.color
   formData.priority = goal.priority
@@ -360,30 +366,34 @@ const calculateDailyRequired = (goal) => {
   return Math.max(0, remainingAmount / daysRemaining)
 }
 
-const addContribution = (goal) => {
-  selectedGoal.value = goal
-  contributionAmount.value = ''
-  showContributionModal.value = true
+const getAmountNeeded = (goal) => {
+  if (typeof goal?.amountNeeded === 'number') return Math.max(0, goal.amountNeeded)
+  return Math.max(0, (goal?.targetAmount || 0) - (goal?.currentAmount || 0))
 }
 
-const submitContribution = async () => {
-  if (!selectedGoal.value || !contributionAmount.value) return
-
-  const amount = parseFloat(contributionAmount.value)
-  if (amount <= 0) return
-
-  try {
-    await addContributionToGoal(selectedGoal.value.id, amount)
-    closeContributionModal()
-  } catch (err) {
-    console.error('Error adding contribution:', err)
-  }
+const getDaysRemaining = (goal) => {
+  if (typeof goal?.daysRemaining === 'number') return Math.max(0, goal.daysRemaining)
+  return calculateDaysRemaining(goal?.deadline)
 }
 
-const closeContributionModal = () => {
-  showContributionModal.value = false
-  selectedGoal.value = null
-  contributionAmount.value = ''
+const getDailyAmountToSave = (goal) => {
+  if (typeof goal?.dailyAmountToSave === 'number') return Math.max(0, goal.dailyAmountToSave)
+
+  const amountNeeded = getAmountNeeded(goal)
+  const daysRemaining = getDaysRemaining(goal)
+  if (daysRemaining <= 0) return 0
+  return amountNeeded / daysRemaining
+}
+
+const getMonthlyAmountToSave = (goal) => {
+  if (typeof goal?.monthlyAmountToSave === 'number') return Math.max(0, goal.monthlyAmountToSave)
+
+  const amountNeeded = getAmountNeeded(goal)
+  const daysRemaining = getDaysRemaining(goal)
+  if (daysRemaining <= 0) return 0
+
+  const monthsRemaining = Math.max(1, Math.ceil(daysRemaining / 30.4375))
+  return amountNeeded / monthsRemaining
 }
 </script>
 

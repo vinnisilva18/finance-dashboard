@@ -138,7 +138,7 @@
                 {{ goal.icon }}
               </div>
               <div>
-                <h4>{{ goal.name }}</h4>
+                <h4>{{ goal.name || goal.title }}</h4>
                 <p class="goal-deadline">{{ formatDate(goal.deadline) }}</p>
               </div>
             </div>

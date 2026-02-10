@@ -161,6 +161,7 @@ export const useDashboard = () => {
     goals.value = goalsList.slice(0, 3).map(g => ({
       ...g,
       id: g._id || g.id,
+      name: g.title || g.name,
       percentage: g.targetAmount > 0 ? ((g.currentAmount / g.targetAmount) * 100).toFixed(0) : 0,
       current: g.currentAmount || 0,
       target: g.targetAmount || 0,

@@ -60,7 +60,7 @@ router.get('/:id', auth, async (req, res) => {
 // Create goal
 router.post('/', auth, async (req, res) => {
   try {
-    const { title, description, targetAmount, currentAmount, deadline, priority, currency, category } = req.body;
+    const { name: title, description, targetAmount, currentAmount, deadline, priority, currency, category } = req.body;
 
     const goal = new Goal({
       title,
@@ -85,12 +85,20 @@ router.post('/', auth, async (req, res) => {
 // Update goal
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { title, description, targetAmount, currentAmount, deadline, priority, status, currency, category } = req.body;
+    const updates = {};
+    if (Object.prototype.hasOwnProperty.call(req.body, 'name')) updates.title = req.body.name;
+    if (Object.prototype.hasOwnProperty.call(req.body, 'description')) updates.description = req.body.description;
+    if (Object.prototype.hasOwnProperty.call(req.body, 'targetAmount')) updates.targetAmount = req.body.targetAmount;
+    if (Object.prototype.hasOwnProperty.call(req.body, 'currentAmount')) updates.currentAmount = req.body.currentAmount;
+    if (Object.prototype.hasOwnProperty.call(req.body, 'deadline')) updates.deadline = req.body.deadline;
+    if (Object.prototype.hasOwnProperty.call(req.body, 'priority')) updates.priority = req.body.priority;
+    if (Object.prototype.hasOwnProperty.call(req.body, 'status')) updates.status = req.body.status;
+    if (Object.prototype.hasOwnProperty.call(req.body, 'currency')) updates.currency = req.body.currency;
 
     const goal = await Goal.findOneAndUpdate(
       { _id: req.params.id, userId: req.userId },
-      { title, description, targetAmount, currentAmount, deadline, priority, status, currency, category },
-      { new: true }
+      updates,
+      { new: true, runValidators: true }
     );
 
     if (!goal) {

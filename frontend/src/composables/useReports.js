@@ -87,15 +87,21 @@ export const useReports = () => {
         total: goals.length,
         percentage: goals.length > 0 ? (completedGoals / goals.length) * 100 : 0
       }
-      const goalsData = goals.map(g => ({
-          id: g.id,
-          name: g.name,
-          current: g.currentAmount,
-          target: g.targetAmount,
-          progress: g.targetAmount > 0 ? ((g.currentAmount / g.targetAmount) * 100).toFixed(0) : 0,
+      const goalsData = goals.map(g => {
+        const id = g._id || g.id
+        const name = g.title || g.name
+        const current = g.currentAmount ?? g.current ?? 0
+        const target = g.targetAmount ?? g.target ?? 0
+        return {
+          id,
+          name,
+          current,
+          target,
+          progress: target > 0 ? ((current / target) * 100).toFixed(0) : 0,
           deadline: g.deadline,
           color: g.color
-      }));
+        }
+      })
 
 
       reportData.value = {

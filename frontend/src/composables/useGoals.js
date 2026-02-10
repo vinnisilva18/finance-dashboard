@@ -33,6 +33,7 @@ export const useGoals = () => {
     try {
       const response = await apiService.post('/goals', goal)
       goalStore.addGoal(response.data)
+      return response.data
     } catch (err) {
       error.value = 'Failed to add goal'
       throw err
@@ -45,7 +46,13 @@ export const useGoals = () => {
     loading.value = true
     try {
       const response = await apiService.put(`/goals/${id}`, updates)
-      goalStore.updateGoal(id, response.data)
+
+      const index = goalStore.goals.findIndex(g => g._id === id)
+      if (index !== -1) {
+        goalStore.goals.splice(index, 1, response.data)
+      }
+
+      return response.data
     } catch (err) {
       error.value = 'Failed to update goal'
       throw err
@@ -57,8 +64,9 @@ export const useGoals = () => {
   const deleteGoal = async (id) => {
     loading.value = true
     try {
-      await apiService.delete(`/goals/${id}`)
-      goalStore.deleteGoal(id)
+      // O store já faz a chamada de API e remove do estado.
+      // Se fizermos 2 deletes (composable + store), o 2º retorna 404 e o UI não atualiza.
+      await goalStore.deleteGoal(id)
     } catch (err) {
       error.value = 'Failed to delete goal'
       throw err
@@ -70,16 +78,18 @@ export const useGoals = () => {
   const addContribution = async (goalId, amount) => {
     loading.value = true
     try {
-      let goals = localStorageService.getData(GOALS_STORAGE_KEY) || []
-      const index = goals.findIndex(g => g.id === goalId)
+      const goal = goalStore.goals.find(g => g._id === goalId)
+      if (!goal) return null
+
+      const newAmount = Math.min(goal.currentAmount + amount, goal.targetAmount)
+      const response = await apiService.patch(`/goals/${goalId}/progress`, { currentAmount: newAmount })
+
+      const index = goalStore.goals.findIndex(g => g._id === goalId)
       if (index !== -1) {
-        goals[index].currentAmount += amount
-        if (goals[index].currentAmount > goals[index].targetAmount) {
-          goals[index].currentAmount = goals[index].targetAmount
-        }
-        localStorageService.saveData(GOALS_STORAGE_KEY, goals)
-        goalStore.addContribution(goalId, amount)
+        goalStore.goals.splice(index, 1, response.data)
       }
+
+      return response.data
     } catch (err) {
       error.value = 'Failed to add contribution'
       throw err
@@ -102,13 +112,18 @@ export const useGoals = () => {
 
   const activeGoals = computed(() => {
     return goalStore.goals.filter(goal => {
-      const deadline = new Date(goal.deadline)
-      return goal.currentAmount < goal.targetAmount && deadline > new Date()
+      const status = goal.status || 'active'
+      const isCompleted = goal.currentAmount >= goal.targetAmount || status === 'completed'
+      const isCancelled = status === 'cancelled'
+      return !isCompleted && !isCancelled
     })
   })
 
   const completedGoals = computed(() => {
-    return goalStore.goals.filter(goal => goal.currentAmount >= goal.targetAmount)
+    return goalStore.goals.filter(goal => {
+      const status = goal.status || 'active'
+      return goal.currentAmount >= goal.targetAmount || status === 'completed'
+    })
   })
 
   return {
