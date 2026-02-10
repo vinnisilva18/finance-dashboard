@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="goals">
     <div class="header">
       <h1>Metas Financeiras</h1>
@@ -9,15 +9,15 @@
 
     <div class="goals-summary">
       <div class="summary-card">
-        <h3>Total Target</h3>
+        <h3>Meta Total</h3>
         <p class="amount">{{ formatCurrency(totalTargetAmount) }}</p>
       </div>
       <div class="summary-card">
-        <h3>Total Saved</h3>
+        <h3>Total Guardado</h3>
         <p class="amount">{{ formatCurrency(totalCurrentAmount) }}</p>
       </div>
       <div class="summary-card">
-        <h3>Overall Progress</h3>
+        <h3>Progresso Geral</h3>
         <div class="progress-display">
           <p class="amount">{{ Math.round(totalProgress * 100) }}%</p>
           <div class="progress-bar">
@@ -26,64 +26,64 @@
         </div>
       </div>
       <div class="summary-card">
-        <h3>Active Goals</h3>
+        <h3>Metas Ativas</h3>
         <p class="amount">{{ activeGoals.length }}</p>
       </div>
     </div>
 
     <div v-if="showForm" class="goal-form card">
-      <h3>{{ editingGoal ? 'Edit Goal' : 'Create New Goal' }}</h3>
+      <h3>{{ editingGoal ? 'Editar Meta' : 'Criar Nova Meta' }}</h3>
       <form @submit.prevent="handleSubmit">
         <div class="form-row">
           <div class="form-group">
-            <label>Goal Name</label>
-            <input v-model="formData.name" type="text" required class="form-control" placeholder="e.g., Emergency Fund">
+            <label>Nome da Meta</label>
+            <input v-model="formData.name" type="text" required class="form-control" placeholder="Ex.: Reserva de Emergência">
           </div>
           
           <div class="form-group">
-            <label>Category</label>
+            <label>Categoria</label>
             <select v-model="formData.category" class="form-control" required>
-              <option value="savings">Savings</option>
-              <option value="vehicle">Vehicle</option>
-              <option value="travel">Travel</option>
-              <option value="home">Home</option>
-              <option value="education">Education</option>
-              <option value="investment">Investment</option>
-              <option value="other">Other</option>
+              <option value="savings">Poupança</option>
+              <option value="vehicle">Veículo</option>
+              <option value="travel">Viagem</option>
+              <option value="home">Casa</option>
+              <option value="education">Educação</option>
+              <option value="investment">Investimento</option>
+              <option value="other">Outro</option>
             </select>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Target Amount</label>
+            <label>Valor da Meta</label>
             <input v-model="formData.targetAmount" type="number" step="0.01" required class="form-control" placeholder="10000">
           </div>
           
           <div class="form-group">
-            <label>Current Amount</label>
+            <label>Valor Atual</label>
             <input v-model="formData.currentAmount" type="number" step="0.01" required class="form-control" placeholder="0">
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Deadline</label>
+            <label>Prazo</label>
             <input v-model="formData.deadline" type="date" required class="form-control">
           </div>
           
           <div class="form-group">
-            <label>Priority</label>
+            <label>Prioridade</label>
             <select v-model="formData.priority" class="form-control" required>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
+              <option value="high">Alta</option>
+              <option value="medium">Média</option>
+              <option value="low">Baixa</option>
             </select>
           </div>
         </div>
 
         <div class="form-group">
-          <label>Goal Color</label>
+          <label>Cor da Meta</label>
           <div class="color-picker">
             <input v-model="formData.color" type="color" class="color-input">
             <span class="color-preview" :style="{ backgroundColor: formData.color }"></span>
@@ -92,30 +92,30 @@
         </div>
 
         <div class="form-group">
-          <label>Description (Optional)</label>
-          <textarea v-model="formData.description" class="form-control" rows="3" placeholder="Add any notes about your goal..."></textarea>
+          <label>Descrição (Opcional)</label>
+          <textarea v-model="formData.description" class="form-control" rows="3" placeholder="Adicione observações sobre sua meta..."></textarea>
         </div>
 
         <div class="form-actions">
           <button type="submit" :disabled="loading" class="btn btn-primary">
-            {{ loading ? 'Saving...' : (editingGoal ? 'Update Goal' : 'Create Goal') }}
+            {{ loading ? 'Salvando...' : (editingGoal ? 'Atualizar Meta' : 'Criar Meta') }}
           </button>
           <button v-if="editingGoal" @click="cancelEdit" type="button" class="btn btn-secondary">
-            Cancel
+            Cancelar
           </button>
         </div>
       </form>
     </div>
 
-    <div v-if="loading && !showForm" class="loading">Loading goals...</div>
+    <div v-if="loading && !showForm" class="loading">Carregando metas...</div>
     <div v-if="error" class="error">{{ error }}</div>
 
     <div class="tabs">
       <button @click="activeTab = 'active'" :class="['tab-btn', { active: activeTab === 'active' }]">
-        Active Goals ({{ activeGoals.length }})
+        Metas Ativas ({{ activeGoals.length }})
       </button>
       <button @click="activeTab = 'completed'" :class="['tab-btn', { active: activeTab === 'completed' }]">
-        Completed Goals ({{ completedGoals.length }})
+        Metas Concluídas ({{ completedGoals.length }})
       </button>
     </div>
 
@@ -131,14 +131,14 @@
             </span>
           </div>
           <div class="goal-actions">
-            <button @click="editGoal(goal)" class="btn-icon" title="Edit">
-              ✏️
+            <button @click="editGoal(goal)" class="btn-icon" title="Editar">
+              &#x270F;&#xFE0F;
             </button>
-            <button @click="addContribution(goal)" class="btn-icon" title="Add Contribution">
-              💰
+            <button @click="addContribution(goal)" class="btn-icon" title="Adicionar Contribuição">
+              &#x1F4B0;
             </button>
-            <button @click="deleteGoal(goal.id)" class="btn-icon" title="Delete">
-              🗑️
+            <button @click="deleteGoal(goal.id)" class="btn-icon" title="Excluir">
+              &#x1F5D1;&#xFE0F;
             </button>
           </div>
         </div>
@@ -146,7 +146,7 @@
         <div class="goal-progress">
           <div class="progress-info">
             <span class="progress-text">
-              {{ formatCurrency(goal.currentAmount) }} of {{ formatCurrency(goal.targetAmount) }}
+              {{ formatCurrency(goal.currentAmount) }} de {{ formatCurrency(goal.targetAmount) }}
             </span>
             <span class="progress-percentage">{{ Math.round((goal.currentAmount / goal.targetAmount) * 100) }}%</span>
           </div>
@@ -160,20 +160,20 @@
         
         <div class="goal-details">
           <div class="detail-row">
-            <span class="label">Deadline:</span>
+            <span class="label">Prazo:</span>
             <span class="value">{{ formatDate(goal.deadline) }}</span>
           </div>
           <div class="detail-row">
-            <span class="label">Days Remaining:</span>
-            <span class="value">{{ calculateDaysRemaining(goal.deadline) }} days</span>
+            <span class="label">Dias Restantes:</span>
+            <span class="value">{{ calculateDaysRemaining(goal.deadline) }} dias</span>
           </div>
           <div class="detail-row">
-            <span class="label">Remaining:</span>
+            <span class="label">Faltam:</span>
             <span class="value">{{ formatCurrency(goal.targetAmount - goal.currentAmount) }}</span>
           </div>
           <div class="detail-row">
-            <span class="label">Daily Required:</span>
-            <span class="value">{{ formatCurrency(calculateDailyRequired(goal)) }}/day</span>
+            <span class="label">Necessário por Dia:</span>
+            <span class="value">{{ formatCurrency(calculateDailyRequired(goal)) }}/dia</span>
           </div>
         </div>
         
@@ -185,7 +185,7 @@
 
     <div v-if="activeTab === 'completed'" class="completed-goals">
       <div v-for="goal in completedGoals" :key="goal.id" class="completed-goal card">
-        <div class="completion-badge">🎉 Completed!</div>
+        <div class="completion-badge">&#x1F389; Concluída!</div>
         <div class="goal-header">
           <div class="goal-color" :style="{ backgroundColor: goal.color }"></div>
           <div class="goal-info">
@@ -193,19 +193,19 @@
             <span class="goal-category">{{ goal.category }}</span>
           </div>
           <div class="goal-actions">
-            <button @click="deleteGoal(goal.id)" class="btn-icon" title="Delete">
-              🗑️
+            <button @click="deleteGoal(goal.id)" class="btn-icon" title="Excluir">
+              &#x1F5D1;&#xFE0F;
             </button>
           </div>
         </div>
         
         <div class="completion-info">
           <div class="info-item">
-            <span class="label">Completed On:</span>
+            <span class="label">Concluída em:</span>
             <span class="value">{{ formatDate(new Date().toISOString()) }}</span>
           </div>
           <div class="info-item">
-            <span class="label">Total Saved:</span>
+            <span class="label">Total Guardado:</span>
             <span class="value">{{ formatCurrency(goal.targetAmount) }}</span>
           </div>
         </div>
@@ -213,25 +213,25 @@
     </div>
 
     <div v-if="activeGoals.length === 0 && !loading" class="empty-state">
-      <div class="empty-icon">🎯</div>
-      <h3>No Financial Goals Yet</h3>
-      <p>Start by creating your first financial goal</p>
+      <div class="empty-icon">&#x1F3AF;</div>
+      <h3>Nenhuma Meta Financeira Ainda</h3>
+      <p>Comece criando sua primeira meta financeira</p>
       <button @click="showForm = true" class="btn btn-primary">
-        Create First Goal
+        Criar Primeira Meta
       </button>
     </div>
 
     <!-- Modal for adding contribution -->
     <div v-if="showContributionModal" class="modal-overlay">
       <div class="modal-content card">
-        <h3>Add Contribution to {{ selectedGoal?.name }}</h3>
+        <h3>Adicionar Contribuição para {{ selectedGoal?.name }}</h3>
         <div class="form-group">
-          <label>Amount</label>
+          <label>Valor</label>
           <input v-model="contributionAmount" type="number" step="0.01" class="form-control" placeholder="100">
         </div>
         <div class="modal-actions">
           <button @click="submitContribution" class="btn btn-primary" :disabled="loading">
-            {{ loading ? 'Adicionando...' : 'Adicionar Contribuição' }}
+            {{ loading ? 'Adicionando...' : 'Adicionar ContribuiÃ§Ã£o' }}
           </button>
           <button @click="closeContributionModal" class="btn btn-secondary">
             Cancelar
@@ -746,3 +746,6 @@ const closeContributionModal = () => {
   margin: 20px 0;
 }
 </style>
+
+
+
