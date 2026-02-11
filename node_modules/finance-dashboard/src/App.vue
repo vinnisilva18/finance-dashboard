@@ -7,8 +7,12 @@
           <div class="logo-icon">💰</div>
           <h1 v-show="!isSidebarCollapsed">Finance<span>Pro</span></h1>
         </div>
-        <button @click="toggleSidebar" class="sidebar-collapse-desktop">
-          <span>◁</span>
+        <button
+          @click="toggleSidebar"
+          class="sidebar-collapse-desktop"
+          :aria-label="isSidebarCollapsed ? 'Expandir sidebar' : 'Recolher sidebar'"
+        >
+          <span>{{ isSidebarCollapsed ? '▶' : '◀' }}</span>
         </button>
         <button @click="toggleSidebarMobile" class="sidebar-toggle">
           <span>×</span>
@@ -121,7 +125,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { useUIStore } from './stores/ui'
@@ -218,6 +222,13 @@ const dismissNotification = () => {
   notification.value = null
 }
 
+const setScrollLocked = (locked) => {
+  if (typeof document === 'undefined') return
+  const value = locked ? 'hidden' : ''
+  document.documentElement.style.overflow = value
+  document.body.style.overflow = value
+}
+
 onMounted(() => {
   const savedColor = localStorage.getItem('userColor')
   if (savedColor) {
@@ -250,6 +261,12 @@ watch(() => route.path, (newPath) => {
   }
 })
 
+watch(showMobileSidebar, (isOpen) => {
+  if (typeof window === 'undefined') return
+  const isMobile = window.matchMedia('(max-width: 1024px)').matches
+  setScrollLocked(isMobile && isOpen)
+})
+
 // Watch para autenticação - correção principal
 watch(isAuthenticated, (newValue, oldValue) => {
   console.log('Auth state changed:', { old: oldValue, new: newValue })
@@ -257,6 +274,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
   if (!newValue) {
     // Usuário fez logout - resetar tudo
     resetAppState()
+    setScrollLocked(false)
   } else if (newValue && oldValue === false) {
     // Usuário acabou de fazer login
     resetAppState()
@@ -294,13 +312,50 @@ watch(isAuthenticated, (newValue, oldValue) => {
   left: 0;
   bottom: 0;
   z-index: 50;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, width 0.3s ease;
   box-shadow: var(--shadow-lg);
   color: #4b5563;
+  transform: translateX(0);
 }
 
 .sidebar.collapsed {
   width: 80px;
+}
+
+.sidebar.collapsed .sidebar-header {
+  padding: 1rem 0.75rem;
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-collapse-desktop {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.5rem;
+  width: 32px;
+  height: 32px;
+  padding: 0.25rem;
+}
+
+.sidebar.collapsed .sidebar-content {
+  padding: 1rem 0.5rem;
+}
+
+.sidebar.collapsed .user-info {
+  justify-content: center;
+  padding: 0.75rem 0.5rem;
+  gap: 0;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 0.75rem 0.5rem;
+  gap: 0;
+}
+
+.sidebar.collapsed .logout-btn {
+  justify-content: center;
+  padding: 0.75rem 0.5rem;
+  gap: 0;
 }
 
 .sidebar-header {
@@ -309,6 +364,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
 }
 
 .sidebar-collapse-desktop {
@@ -317,9 +373,15 @@ watch(isAuthenticated, (newValue, oldValue) => {
   color: #6b7280;
   font-size: 1.5rem;
   cursor: pointer;
-  display: none;
+  display: flex;
   padding: 0.5rem;
   border-radius: var(--radius);
+  flex-shrink: 0;
+  line-height: 1;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar-collapse-desktop:hover {
@@ -688,22 +750,28 @@ watch(isAuthenticated, (newValue, oldValue) => {
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  /* Garantir que a sidebar esteja fechada por padrão em mobile */
-  .sidebar:not(.open) {
+  .sidebar {
     transform: translateX(-100%);
+    z-index: 100;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Em mobile não existe "colapsada": largura fixa */
+  .sidebar.collapsed {
+    width: 280px;
   }
 
   .main-content.with-sidebar,
   .main-content.collapsed {
     margin-left: 0;
+    width: 100%;
   }
 
-  .sidebar {
-    transform: translateX(-100%);
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
+  .sidebar-collapse-desktop {
+    display: none;
   }
 
   .sidebar-toggle {
@@ -750,69 +818,4 @@ watch(isAuthenticated, (newValue, oldValue) => {
   }
 }
 
-/* ADICIONE ESTAS REGRAS NO FINAL DO SEU CSS */
-
-/* Garantir transições suaves */
-.sidebar {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-              width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.main-content {
-  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Garantir que quando não autenticado, o conteúdo ocupe 100% */
-.app-container:has(.main-content:not(.with-sidebar)) .main-content {
-  margin-left: 0 !important;
-  width: 100% !important;
-}
-
-/* Correção para quando sidebar está colapsada */
-.sidebar.collapsed ~ .main-content.collapsed {
-  margin-left: 80px !important;
-}
-
-/* Correção para quando sidebar está expandida */
-.sidebar:not(.collapsed) ~ .main-content.with-sidebar:not(.collapsed) {
-  margin-left: 280px !important;
-}
-
-/* Garantir que a sidebar móvel funcione corretamente */
-@media (max-width: 1024px) {
-  .sidebar {
-    transform: translateX(-100%);
-    z-index: 100;
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
-  .sidebar.collapsed,
-  .sidebar:not(.collapsed) {
-    width: 280px; /* Largura fixa em mobile */
-  }
-
-  .main-content.with-sidebar,
-  .main-content.collapsed {
-    margin-left: 0 !important;
-    width: 100% !important;
-  }
-}
-
-/* Reset visual quando não autenticado */
-.app-container:not(:has(.sidebar)) .main-content {
-  margin-left: 0 !important;
-}
-
-/* Garantir que overlay desapareça */
-.sidebar-overlay {
-  transition: opacity 0.3s ease;
-}
-
-.sidebar-overlay:not(.show) {
-  opacity: 0;
-  pointer-events: none;
-}
 </style>
