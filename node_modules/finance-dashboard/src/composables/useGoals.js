@@ -106,6 +106,31 @@ export const useGoals = () => {
     return goalStore.goals.reduce((sum, goal) => sum + goal.currentAmount, 0)
   })
 
+  const byCurrency = computed(() => {
+    return goalStore.goals.reduce((acc, goal) => {
+      const code = goal.currencyCode || 'BRL'
+      const symbol = goal.currencySymbol || (code === 'BRL' ? 'R$' : code)
+      const target = Number(goal.targetAmount || 0)
+      const current = Number(goal.currentAmount || 0)
+
+      if (!acc[code]) {
+        acc[code] = { code, symbol, totalTarget: 0, totalCurrent: 0 }
+      }
+
+      acc[code].totalTarget += target
+      acc[code].totalCurrent += current
+
+      return acc
+    }, {})
+  })
+
+  const totalsList = computed(() => {
+    return Object.values(byCurrency.value).map((row) => ({
+      ...row,
+      progress: row.totalTarget > 0 ? row.totalCurrent / row.totalTarget : 0
+    }))
+  })
+
   const totalProgress = computed(() => {
     return totalTargetAmount.value > 0 ? totalCurrentAmount.value / totalTargetAmount.value : 0
   })
@@ -139,6 +164,8 @@ export const useGoals = () => {
     addContribution,
     totalTargetAmount,
     totalCurrentAmount,
+    byCurrency,
+    totalsList,
     totalProgress
   }
 }

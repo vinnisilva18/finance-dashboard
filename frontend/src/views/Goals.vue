@@ -10,19 +10,47 @@
     <div class="goals-summary">
       <div class="summary-card">
         <h3>Meta Total</h3>
-        <p class="amount">{{ formatCurrency(totalTargetAmount) }}</p>
+        <p v-if="totalsList.length === 1" class="amount">
+          {{ formatMoney(totalsList[0].totalTarget, totalsList[0].code, totalsList[0].symbol) }}
+        </p>
+        <div v-else class="amount-multi">
+          <div v-for="row in totalsList" :key="row.code" class="amount-line">
+            {{ row.code }}: {{ formatMoney(row.totalTarget, row.code, row.symbol) }}
+          </div>
+        </div>
       </div>
       <div class="summary-card">
         <h3>Total Guardado</h3>
-        <p class="amount">{{ formatCurrency(totalCurrentAmount) }}</p>
+        <p v-if="totalsList.length === 1" class="amount">
+          {{ formatMoney(totalsList[0].totalCurrent, totalsList[0].code, totalsList[0].symbol) }}
+        </p>
+        <div v-else class="amount-multi">
+          <div v-for="row in totalsList" :key="row.code" class="amount-line">
+            {{ row.code }}: {{ formatMoney(row.totalCurrent, row.code, row.symbol) }}
+          </div>
+        </div>
       </div>
       <div class="summary-card">
         <h3>Progresso Geral</h3>
         <div class="progress-display">
-          <p class="amount">{{ Math.round(totalProgress * 100) }}%</p>
-          <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: `${totalProgress * 100}%` }"></div>
-          </div>
+          <template v-if="totalsList.length === 1">
+            <p class="amount">{{ Math.round((totalsList[0].progress || 0) * 100) }}%</p>
+            <div class="progress-bar">
+              <div class="progress-fill" :style="{ width: `${(totalsList[0].progress || 0) * 100}%` }"></div>
+            </div>
+          </template>
+          <template v-else>
+            <p class="amount">Multi-moeda</p>
+            <div v-for="row in totalsList" :key="row.code" class="progress-row">
+              <div class="progress-row-header">
+                <span>{{ row.code }}</span>
+                <span>{{ Math.round((row.progress || 0) * 100) }}%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: `${(row.progress || 0) * 100}%` }"></div>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
       <div class="summary-card">
@@ -154,7 +182,7 @@
         <div class="goal-progress">
           <div class="progress-info">
             <span class="progress-text">
-              {{ formatCurrency(goal.currentAmount) }} de {{ formatCurrency(goal.targetAmount) }}
+              {{ formatGoalMoney(goal.currentAmount, goal) }} de {{ formatGoalMoney(goal.targetAmount, goal) }}
             </span>
             <span class="progress-percentage">{{ Math.round((goal.currentAmount / goal.targetAmount) * 100) }}%</span>
           </div>
@@ -177,15 +205,15 @@
           </div>
           <div class="detail-row">
             <span class="label">Faltam:</span>
-            <span class="value">{{ formatCurrency(getAmountNeeded(goal)) }}</span>
+            <span class="value">{{ formatGoalMoney(getAmountNeeded(goal), goal) }}</span>
           </div>
           <div class="detail-row">
             <span class="label">Necessário por Dia:</span>
-            <span class="value">{{ formatCurrency(getDailyAmountToSave(goal)) }}/dia</span>
+            <span class="value">{{ formatGoalMoney(getDailyAmountToSave(goal), goal) }}/dia</span>
           </div>
           <div class="detail-row">
             <span class="label">Necessário por Mês:</span>
-            <span class="value">{{ formatCurrency(getMonthlyAmountToSave(goal)) }}/mês</span>
+            <span class="value">{{ formatGoalMoney(getMonthlyAmountToSave(goal), goal) }}/mês</span>
           </div>
         </div>
 
@@ -218,7 +246,7 @@
           </div>
           <div class="info-item">
             <span class="label">Total Guardado:</span>
-            <span class="value">{{ formatCurrency(goal.targetAmount) }}</span>
+            <span class="value">{{ formatGoalMoney(goal.targetAmount, goal) }}</span>
           </div>
         </div>
       </div>
@@ -239,7 +267,7 @@
 <script setup>
 import { ref, onMounted, reactive } from 'vue'
 import { useGoals } from '../composables/useGoals'
-import { formatCurrency, formatDate } from '../utils/formatters'
+import { formatDate } from '../utils/formatters'
 import { useCurrencies } from '../composables/useCurrencies'
 import { useCategories } from '../composables/useCategories'
 
@@ -256,9 +284,7 @@ const {
   addGoal,
   updateGoal,
   deleteGoal,
-  totalTargetAmount,
-  totalCurrentAmount,
-  totalProgress
+  totalsList,
 } = useGoals()
 
 const showForm = ref(false)
@@ -282,6 +308,20 @@ onMounted(async () => {
   await fetchCategories()
   await fetchGoals()
 })
+
+const formatMoney = (amount, currencyCode, currencySymbol) => {
+  const symbol = currencySymbol || (currencyCode === 'BRL' ? 'R$' : currencyCode || '')
+  const formatted = new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(Number(amount || 0))
+
+  return symbol ? `${symbol} ${formatted}` : formatted
+}
+
+const formatGoalMoney = (amount, goal) => {
+  return formatMoney(amount, goal?.currencyCode, goal?.currencySymbol)
+}
 
 const categoryLabelMap = {
   savings: 'Poupança',

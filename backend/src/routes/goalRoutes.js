@@ -4,6 +4,18 @@ const Goal = require('../models/Goal');
 
 const router = express.Router();
 
+const serializeGoal = (goalDoc) => {
+  const obj = goalDoc.toObject ? goalDoc.toObject({ virtuals: true }) : goalDoc;
+  const currency = obj.currency && typeof obj.currency === 'object' ? obj.currency : null;
+
+  return {
+    ...obj,
+    currency: currency?._id ?? obj.currency,
+    currencyCode: currency?.code ?? obj.currencyCode,
+    currencySymbol: currency?.symbol ?? obj.currencySymbol
+  };
+};
+
 // Middleware to verify token
 const auth = (req, res, next) => {
   try {
@@ -30,8 +42,11 @@ router.get('/', auth, async (req, res) => {
       query.status = status;
     }
 
-    const goals = await Goal.find(query).sort({ createdAt: -1 });
-    res.json(goals);
+    const goals = await Goal.find(query)
+      .populate('currency', 'code symbol')
+      .sort({ createdAt: -1 });
+
+    res.json(goals.map(serializeGoal));
   } catch (error) {
     console.error('Get goals error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -44,13 +59,13 @@ router.get('/:id', auth, async (req, res) => {
     const goal = await Goal.findOne({
       _id: req.params.id,
       userId: req.userId
-    });
+    }).populate('currency', 'code symbol');
 
     if (!goal) {
       return res.status(404).json({ message: 'Goal not found' });
     }
 
-    res.json(goal);
+    res.json(serializeGoal(goal));
   } catch (error) {
     console.error('Get goal error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -75,7 +90,8 @@ router.post('/', auth, async (req, res) => {
     });
 
     await goal.save();
-    res.status(201).json(goal);
+    await goal.populate('currency', 'code symbol');
+    res.status(201).json(serializeGoal(goal));
   } catch (error) {
     console.error('Create goal error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -99,13 +115,13 @@ router.put('/:id', auth, async (req, res) => {
       { _id: req.params.id, userId: req.userId },
       updates,
       { new: true, runValidators: true }
-    );
+    ).populate('currency', 'code symbol');
 
     if (!goal) {
       return res.status(404).json({ message: 'Goal not found' });
     }
 
-    res.json(goal);
+    res.json(serializeGoal(goal));
   } catch (error) {
     console.error('Update goal error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -121,13 +137,13 @@ router.patch('/:id/progress', auth, async (req, res) => {
       { _id: req.params.id, userId: req.userId },
       { currentAmount },
       { new: true }
-    );
+    ).populate('currency', 'code symbol');
 
     if (!goal) {
       return res.status(404).json({ message: 'Goal not found' });
     }
 
-    res.json(goal);
+    res.json(serializeGoal(goal));
   } catch (error) {
     console.error('Update goal progress error:', error);
     res.status(500).json({ message: 'Server error' });
